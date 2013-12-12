@@ -1,0 +1,15 @@
+Abandoned Temple
+----------------
+
+One-time configure:
+
+    LIBGLFWPATH=/path/to/libglfw3.dylib  # optional, config.sh will ask otherwise
+    sh scripts/config.sh
+
+Build && run:
+
+    dub
+
+Just build:
+
+    dub build

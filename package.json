@@ -1,0 +1,14 @@
+{
+    "name": "abandonedtemple",
+    "description": "A slowly-developing exploratory OpenGL game",
+    "homepage": "https://github.com/nxsy/abandonedtemple",
+    "copyright": "Copyright © 2013 Neil Blakey-Milner",
+    "authors": [ "Neil Blakey-Milner" ],
+
+    "targetPath": "build/bin",
+
+    "dependencies": {
+        "derelict-glfw3": "~master",
+        "derelict-gl3": "~master"
+    }
+}
