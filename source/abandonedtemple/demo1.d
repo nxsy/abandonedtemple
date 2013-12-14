@@ -1,0 +1,172 @@
+module abandonedtemple.demo1;
+
+import std.stdio : writefln;
+
+import derelict.glfw3.glfw3;
+import derelict.opengl3.gl3;
+
+string vertexShaderSource = "#version 330 core
+layout(location = 0) in vec4 pos;
+
+void main(){
+    gl_Position = pos;
+}
+";
+
+string fragmentShaderSource = "#version 330 core
+out vec3 color;
+
+void main()
+{
+    color = vec3(1, 0, 0);
+}
+";
+
+class Demo1 {
+    private {
+        int width, height;
+        string programName;
+
+        GLFWwindow *window;
+
+        GLint program;
+
+        GLuint vertexArray;
+        GLuint vertexBuffer;
+
+        void glInit() {
+            DerelictGL3.load();
+            DerelictGLFW3.load();
+
+            if(!glfwInit()) {
+                glfwTerminate();
+                throw new Exception("Failed to create glcontext");
+            }
+
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+            window = glfwCreateWindow(width, height, programName.ptr, null,
+                null);
+            if(!window) {
+                glfwTerminate();
+                throw new Exception("Failed to create window");
+            }
+
+            glfwMakeContextCurrent(window);
+
+            DerelictGL3.reload();
+        }
+
+        GLuint loadShader(GLenum type, string source) {
+            GLint compileStatus;
+
+            GLuint shader = glCreateShader(type);
+            immutable(char) *sourcePtr = source.ptr;
+            GLint length = cast(GLint) source.length;
+            glShaderSource(shader, 1, &sourcePtr, &length);
+
+            glCompileShader(shader);
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
+            if (!compileStatus) {
+                GLchar compileLog[1024];
+                glGetShaderInfoLog(shader, cast(int)compileLog.sizeof, null,
+                    compileLog.ptr);
+                writefln("Error compiling shader type %d: %s", type,
+                    compileLog);
+                throw new Error("Shader compilation failure");
+            }
+            return shader;
+        }
+
+        void programInit() {
+            GLint linkStatus;
+
+            program = glCreateProgram();
+
+            GLint vs = loadShader(GL_VERTEX_SHADER, vertexShaderSource);
+            glAttachShader(program, vs);
+            GLint fs = loadShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
+            glAttachShader(program, fs);
+            glDeleteShader(fs);
+            glDeleteShader(vs);
+
+            glLinkProgram(program);
+            glGetProgramiv(program, GL_LINK_STATUS, &linkStatus);
+
+            if (!linkStatus) {
+                GLchar linkerLog[1024];
+                glGetProgramInfoLog(program, cast(int)linkerLog.sizeof, null,
+                    linkerLog.ptr);
+                writefln("Error linking program: %s", linkerLog);
+                throw new Error("Program linker failure");
+            }
+        }
+
+        void bufferInit() {
+            glGenVertexArrays(1, &vertexArray);
+            glBindVertexArray(vertexArray);
+
+            const GLfloat triangleVertices[] = [
+                -1.0f, -1.0f, 0, 1,
+                 1.0f, -1.0f, 0, 1,
+                 0.0f,  1.0f, 0, 1,
+            ];
+
+            glGenBuffers(1, &vertexBuffer);
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+            glBufferData(GL_ARRAY_BUFFER,
+                triangleVertices.length * GLfloat.sizeof,
+                triangleVertices.ptr,
+                GL_STATIC_DRAW);
+            glBindVertexArray(0);
+        }
+
+        void display() {
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            // Enable all the things
+            glUseProgram(program);
+            glBindVertexArray(vertexArray);
+            glEnableVertexAttribArray(0);
+
+            // What to draw
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+            // Layout of the stuff to draw
+            glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, null);
+
+            // Draw it!
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+
+            // Disable all the things
+            glDisableVertexAttribArray(0);
+            glBindVertexArray(0);
+            glUseProgram(0);
+        }
+
+    }
+
+    public {
+        this(int width, int height, string programName) {
+            this.width = width;
+            this.height = height;
+            this.programName = programName;
+        }
+
+        void run() {
+            glInit();
+            programInit();
+            bufferInit();
+
+            glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
+
+            while (!glfwWindowShouldClose(window)) {
+                display();
+                glfwSwapBuffers(window);
+                glfwPollEvents();
+            }
+        }
+    }
+}
