@@ -5,11 +5,15 @@ import std.stdio : writefln;
 import derelict.glfw3.glfw3;
 import derelict.opengl3.gl3;
 
+import gl3n.linalg;
+
 string vertexShaderSource = "#version 330 core
 layout(location = 0) in vec4 pos;
 
+uniform mat4 u_transform;
+
 void main(){
-    gl_Position = pos;
+    gl_Position = pos * u_transform;
 }
 ";
 
@@ -33,6 +37,10 @@ class Demo1 {
 
         GLuint vertexArray;
         GLuint vertexBuffer;
+        GLint transformMatrix;
+
+        double startTime = 0;
+        double timeDiff = 0;
 
         void glInit() {
             DerelictGL3.load();
@@ -103,6 +111,13 @@ class Demo1 {
                 writefln("Error linking program: %s", linkerLog);
                 throw new Error("Program linker failure");
             }
+
+            string transformMatrixName = "u_transform";
+            transformMatrix = glGetUniformLocation(program, transformMatrixName.ptr);
+            if (transformMatrix == -1) {
+                writefln("Could not bind uniform %s", transformMatrixName);
+                throw new Error("Uniform bind failure");
+            }
         }
 
         void bufferInit() {
@@ -125,12 +140,23 @@ class Demo1 {
         }
 
         void display() {
+            if (!startTime) {
+                startTime = glfwGetTime();
+            }
+            timeDiff = glfwGetTime() - startTime;
+
             glClear(GL_COLOR_BUFFER_BIT);
 
             // Enable all the things
             glUseProgram(program);
             glBindVertexArray(vertexArray);
             glEnableVertexAttribArray(0);
+
+            auto matrix = mat4.identity
+                .rotatey(timeDiff)
+                .rotatex(timeDiff / PI)
+                .scale(0.2, 0.2, 0.2);
+            glUniformMatrix4fv(transformMatrix, 1, GL_FALSE, matrix.value_ptr);
 
             // What to draw
             glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
