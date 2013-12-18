@@ -125,9 +125,21 @@ class Demo1 {
             glBindVertexArray(vertexArray);
 
             const GLfloat triangleVertices[] = [
-                -1.0f, -1.0f, 0, 1,
-                 1.0f, -1.0f, 0, 1,
-                 0.0f,  1.0f, 0, 1,
+                -1.0f, -1.0f, 0, 1, // A
+                 1.0f, -1.0f, 0, 1, // B
+                 0.0f,  1.0f, 0, 1, // C
+
+                -1.0f, -1.0f, 0, 1, // A
+                 1.0f, -1.0f, 0, 1, // B
+                 0.0f,  0.0f, 1, 1, // D
+
+                -1.0f, -1.0f, 0, 1, // A
+                 0.0f,  1.0f, 0, 1, // C
+                 0.0f,  0.0f, 1, 1, // D
+
+                 1.0f, -1.0f, 0, 1, // B
+                 0.0f,  1.0f, 0, 1, // C
+                 0.0f,  0.0f, 1, 1, // D
             ];
 
             glGenBuffers(1, &vertexBuffer);
@@ -164,7 +176,7 @@ class Demo1 {
             glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, null);
 
             // Draw it!
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawArrays(GL_TRIANGLES, 0, 12);
 
             // Disable all the things
             glDisableVertexAttribArray(0);

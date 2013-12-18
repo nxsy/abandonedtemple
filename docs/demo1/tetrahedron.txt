@@ -1,0 +1,46 @@
+Original triangle:
+
+      C
+     / \
+    /   \
+   A-----B
+
+Tetrahedron 3D view:
+
+      C
+     /|\
+    / D \
+   / / \ \
+  A-------B
+
+Original vertices:
+
+bottom-left
+A - -1, -1, 0, 1
+bottom-right
+B -  1, -1, 0, 1
+top-mid
+C -  0,  1, 0, 1
+
+New vertex:
+
+mid-back
+D -  0,  0, 1, 1
+
+Three new triangle surfaces:
+
+      D
+     / \
+    /   \
+   A-----B
+
+      C
+     / \
+    /   \
+   A-----D
+
+      C
+     / \
+    /   \
+   D-----B
+
