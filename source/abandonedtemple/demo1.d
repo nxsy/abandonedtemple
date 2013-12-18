@@ -37,6 +37,7 @@ class Demo1 {
 
         GLuint vertexArray;
         GLuint vertexBuffer;
+        GLuint tetrahedronElements;
         GLint transformMatrix;
 
         double startTime = 0;
@@ -125,21 +126,16 @@ class Demo1 {
             glBindVertexArray(vertexArray);
 
             const GLfloat triangleVertices[] = [
-                -1.0f, -1.0f, 0, 1, // A
-                 1.0f, -1.0f, 0, 1, // B
-                 0.0f,  1.0f, 0, 1, // C
-
-                -1.0f, -1.0f, 0, 1, // A
-                 1.0f, -1.0f, 0, 1, // B
-                 0.0f,  0.0f, 1, 1, // D
-
-                -1.0f, -1.0f, 0, 1, // A
-                 0.0f,  1.0f, 0, 1, // C
-                 0.0f,  0.0f, 1, 1, // D
-
-                 1.0f, -1.0f, 0, 1, // B
-                 0.0f,  1.0f, 0, 1, // C
-                 0.0f,  0.0f, 1, 1, // D
+                -1f, -1f, 0f, 1f,
+                 1f, -1f, 0f, 1f,
+                 0f,  1f, 0f, 1f,
+                 0f,  0f, 1f, 1f,
+            ];
+            GLushort tetrahedron_elements[] = [
+                0, 1, 2,
+                0, 1, 3,
+                0, 2, 3,
+                1, 2, 3,
             ];
 
             glGenBuffers(1, &vertexBuffer);
@@ -148,6 +144,12 @@ class Demo1 {
                 triangleVertices.length * GLfloat.sizeof,
                 triangleVertices.ptr,
                 GL_STATIC_DRAW);
+
+            glGenBuffers(1, &tetrahedronElements);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetrahedronElements);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, tetrahedron_elements.length * GLushort.sizeof, tetrahedron_elements.ptr, GL_STATIC_DRAW);
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
         }
 
@@ -172,11 +174,12 @@ class Demo1 {
 
             // What to draw
             glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetrahedronElements);
             // Layout of the stuff to draw
             glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, null);
 
             // Draw it!
-            glDrawArrays(GL_TRIANGLES, 0, 12);
+            glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, cast(void *)0);
 
             // Disable all the things
             glDisableVertexAttribArray(0);
