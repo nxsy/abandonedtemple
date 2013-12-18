@@ -11,18 +11,27 @@ string vertexShaderSource = "#version 330 core
 layout(location = 0) in vec4 pos;
 
 uniform mat4 u_transform;
+uniform int is_line;
+
+out vec3 Color;
 
 void main(){
+    if (is_line == 0) {
+        Color = vec3(1, 0, 0);
+    } else {
+        Color = vec3(1, 1, 1);
+    }
     gl_Position = pos * u_transform;
 }
 ";
 
 string fragmentShaderSource = "#version 330 core
 out vec3 color;
+in vec3 Color;
 
 void main()
 {
-    color = vec3(1, 0, 0);
+    color = Color;
 }
 ";
 
@@ -38,7 +47,9 @@ class Demo1 {
         GLuint vertexArray;
         GLuint vertexBuffer;
         GLuint tetrahedronElements;
+        GLuint lineElements;
         GLint transformMatrix;
+        GLint isLine;
 
         double startTime = 0;
         double timeDiff = 0;
@@ -119,6 +130,13 @@ class Demo1 {
                 writefln("Could not bind uniform %s", transformMatrixName);
                 throw new Error("Uniform bind failure");
             }
+
+            string isLineName = "is_line";
+            isLine = glGetUniformLocation(program, isLineName.ptr);
+            if (isLine == -1) {
+                writefln("Could not bind uniform %s", isLineName);
+                throw new Error("Uniform bind failure");
+            }
         }
 
         void bufferInit() {
@@ -138,6 +156,15 @@ class Demo1 {
                 1, 2, 3,
             ];
 
+            GLushort line_elements[] = [
+                0, 1,
+                0, 2,
+                1, 2,
+                0, 3,
+                2, 3,
+                1, 3,
+            ];
+
             glGenBuffers(1, &vertexBuffer);
             glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
             glBufferData(GL_ARRAY_BUFFER,
@@ -148,6 +175,10 @@ class Demo1 {
             glGenBuffers(1, &tetrahedronElements);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetrahedronElements);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, tetrahedron_elements.length * GLushort.sizeof, tetrahedron_elements.ptr, GL_STATIC_DRAW);
+
+            glGenBuffers(1, &lineElements);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lineElements);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, line_elements.length * GLushort.sizeof, line_elements.ptr, GL_STATIC_DRAW);
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
             glBindVertexArray(0);
@@ -171,6 +202,7 @@ class Demo1 {
                 .rotatex(timeDiff / PI)
                 .scale(0.2, 0.2, 0.2);
             glUniformMatrix4fv(transformMatrix, 1, GL_FALSE, matrix.value_ptr);
+            glUniform1i(isLine, 0);
 
             // What to draw
             glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
@@ -180,6 +212,11 @@ class Demo1 {
 
             // Draw it!
             glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, cast(void *)0);
+
+            glUniform1i(isLine, 1);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lineElements);
+
+            glDrawElements(GL_LINES, 12, GL_UNSIGNED_SHORT, cast(void *)0);
 
             // Disable all the things
             glDisableVertexAttribArray(0);
