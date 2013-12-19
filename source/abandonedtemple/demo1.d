@@ -191,7 +191,7 @@ class Demo1 {
             }
             timeDiff = glfwGetTime() - startTime;
 
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
             // Enable all the things
             glUseProgram(program);
@@ -243,6 +243,9 @@ class Demo1 {
             bufferInit();
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
+            glClearDepth(1f);
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
 
             while (!glfwWindowShouldClose(window)) {
                 display();
