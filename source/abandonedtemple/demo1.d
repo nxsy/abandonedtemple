@@ -9,6 +9,7 @@ import gl3n.linalg;
 
 string vertexShaderSource = "#version 330 core
 layout(location = 0) in vec4 pos;
+layout(location = 1) in vec3 color;
 
 uniform mat4 u_transform;
 uniform int is_line;
@@ -17,7 +18,7 @@ out vec3 Color;
 
 void main(){
     if (is_line == 0) {
-        Color = vec3(1, 0, 0);
+        Color = color;
     } else {
         Color = vec3(1, 1, 1);
     }
@@ -144,10 +145,10 @@ class Demo1 {
             glBindVertexArray(vertexArray);
 
             const GLfloat triangleVertices[] = [
-                -1f, -1f, 0f, 1f,
-                 1f, -1f, 0f, 1f,
-                 0f,  1f, 0f, 1f,
-                 0f,  0f, 1f, 1f,
+                -1f, -1f,  0f, 1f,   1f,  0f, 0f,
+                 1f, -1f,  0f, 1f,   0f,  1f, 0f,
+                 0f,  1f,  0f, 1f,   0f,  0f, 1f,
+                 0f,  0f, -1f, 1f,   1f,  1f, 0f,
             ];
             GLushort tetrahedron_elements[] = [
                 0, 1, 2,
@@ -196,11 +197,12 @@ class Demo1 {
             glUseProgram(program);
             glBindVertexArray(vertexArray);
             glEnableVertexAttribArray(0);
+            glEnableVertexAttribArray(1);
 
             auto matrix = mat4.identity
                 .rotatey(timeDiff)
                 .rotatex(timeDiff / PI)
-                .scale(0.2, 0.2, 0.2);
+                .scale(0.7, 0.7, 0.7);
             glUniformMatrix4fv(transformMatrix, 1, GL_FALSE, matrix.value_ptr);
             glUniform1i(isLine, 0);
 
@@ -208,7 +210,8 @@ class Demo1 {
             glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetrahedronElements);
             // Layout of the stuff to draw
-            glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, null);
+            glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 7 * GLfloat.sizeof, cast(void*)(0 * GLfloat.sizeof));
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * GLfloat.sizeof, cast(void*)(4 * GLfloat.sizeof));
 
             // Draw it!
             glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_SHORT, cast(void *)0);
@@ -219,6 +222,7 @@ class Demo1 {
             glDrawElements(GL_LINES, 12, GL_UNSIGNED_SHORT, cast(void *)0);
 
             // Disable all the things
+            glDisableVertexAttribArray(1);
             glDisableVertexAttribArray(0);
             glBindVertexArray(0);
             glUseProgram(0);
