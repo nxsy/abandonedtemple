@@ -1,6 +1,9 @@
 Abandoned Temple
 ----------------
 
+Don't have a D compiler or dub?  Don't know how to build libglfw3?  Any other
+issues?  Look at the bottom of this file!
+
 One-time configure:
 
     LIBGLFWPATH=/path/to/libglfw3.dylib  # optional, config.sh will ask otherwise
@@ -13,3 +16,41 @@ Build && run:
 Just build:
 
     dub build
+
+
+Frequent issues:
+================
+
+
+My graphics card/drivers don't support OpenGL 3.3+
+--------------------------------------------------
+
+Try upgrade your graphics card drivers.  If you're running MacOS X, make sure
+you are running Mavericks or later.  Otherwise, sorry, I can't help you.
+
+
+How do I build libglfw3?
+------------------------
+
+Generally, get the source and follow the instructions at:
+
+    http://www.glfw.org/download.html
+
+If you're on Windows, you might be able to use the pre-compiled binaries there.
+
+If you're on a Linux distribution or on a BSD with a diverse package system, it
+might have binary packages or a source "port" that will help you out too.
+
+Let me know if you succeed or fail at any of the above.
+
+
+I don't have D or dub
+---------------------
+
+You can get a D compiler at:
+
+    http://dlang.org/download.html
+
+You can get dub at:
+
+    http://code.dlang.org/download
