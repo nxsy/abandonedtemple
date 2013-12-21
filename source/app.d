@@ -1,8 +1,19 @@
 module app;
 
-import abandonedtemple.demo1;
+import std.stdio : writefln;
+import std.getopt : getopt;
 
-void main() {
-    Demo1 d = new Demo1(640, 480, "Hello");
-    d.run();
+import abandonedtemple.demos.base;
+
+void main(string[] args) {
+    auto demo = "demo1";
+    getopt(args, "demo", &demo);
+
+    auto demo_classname = "abandonedtemple.demos." ~ demo ~ ".Demo";
+    auto o = Object.factory(demo_classname);
+    if (o) {
+        (cast(DemoBase)o).run();
+        return;
+    }
+    writefln("Could not find specified demo: %s", demo);
 }

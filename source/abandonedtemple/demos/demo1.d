@@ -1,4 +1,4 @@
-module abandonedtemple.demo1;
+module abandonedtemple.demos.demo1;
 
 import std.stdio : writefln;
 
@@ -6,6 +6,8 @@ import derelict.glfw3.glfw3;
 import derelict.opengl3.gl3;
 
 import gl3n.linalg;
+
+import abandonedtemple.demos.base : DemoBase;
 
 string vertexShaderSource = "#version 330 core
 layout(location = 0) in vec4 pos;
@@ -36,7 +38,7 @@ void main()
 }
 ";
 
-class Demo1 {
+class Demo : DemoBase {
     private {
         int width, height;
         string programName;
@@ -235,6 +237,9 @@ class Demo1 {
             this.width = width;
             this.height = height;
             this.programName = programName;
+        }
+        this() {
+            this(640, 480, this.toString());
         }
 
         void run() {
