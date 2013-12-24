@@ -15,6 +15,8 @@ layout(location = 1) in vec3 color;
 
 uniform mat4 u_transform;
 uniform int is_line;
+uniform vec4 u_offset;
+uniform mat4 u_frustum;
 
 out vec3 Color;
 
@@ -24,7 +26,7 @@ void main(){
     } else {
         Color = vec3(1, 1, 1);
     }
-    gl_Position = pos * u_transform;
+    gl_Position = (pos * u_transform + u_offset) * u_frustum;
 }
 ";
 
@@ -56,6 +58,10 @@ class Demo : DemoBase {
 
         double startTime = 0;
         double timeDiff = 0;
+
+        GLint frustumMatrixLocation;
+        GLint offsetLocation;
+        mat4 frustumMatrix;
 
         void glInit() {
             DerelictGL3.load();
@@ -131,6 +137,20 @@ class Demo : DemoBase {
             transformMatrix = glGetUniformLocation(program, transformMatrixName.ptr);
             if (transformMatrix == -1) {
                 writefln("Could not bind uniform %s", transformMatrixName);
+                throw new Error("Uniform bind failure");
+            }
+
+            string frustumMatrixName = "u_frustum";
+            frustumMatrixLocation = glGetUniformLocation(program, frustumMatrixName.ptr);
+            if (frustumMatrixLocation == -1) {
+                writefln("Could not bind uniform %s", frustumMatrixName);
+                throw new Error("Uniform bind failure");
+            }
+
+            string offsetName = "u_offset";
+            offsetLocation = glGetUniformLocation(program, offsetName.ptr);
+            if (offsetLocation == -1) {
+                writefln("Could not bind uniform %s", offsetName);
                 throw new Error("Uniform bind failure");
             }
 
@@ -225,17 +245,37 @@ class Demo : DemoBase {
             glBindVertexArray(0);
         }
 
+        mat4 calculateFrustum(float scale, float aspect, float near, float far) {
+            mat4 ret = mat4(0);
+            ret[0][0] = scale / aspect;
+            ret[1][1] = scale;
+            ret[2][2] = (far+near)/(far-near);
+            ret[2][3] = -1f;
+            ret[3][2] = (2 * far * near)/(far-near);
+            return ret;
+        }
+
+        void updateFrustum() {
+            auto aspect = cast(float)width / height;
+            frustumMatrix = mat4.identity * calculateFrustum(1f, aspect, 0.5f, 3f);
+        }
+
         void display() {
             if (!startTime) {
                 startTime = glfwGetTime();
             }
             timeDiff = glfwGetTime() - startTime;
+            glfwGetFramebufferSize(window, &width, &height);
+            updateFrustum();
 
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
             // Enable all the things
             glUseProgram(program);
             glBindVertexArray(vertexArray);
+
+            glUniformMatrix4fv(frustumMatrixLocation, 1, GL_TRUE, frustumMatrix.value_ptr);
+
             glEnableVertexAttribArray(0);
             glEnableVertexAttribArray(1);
 
@@ -254,9 +294,9 @@ class Demo : DemoBase {
             foreach (float[] translation; cube_translations) {
                 auto matrix = mat4.identity
                     .scale(0.2, 0.2, 0.2)
-                    .translate(translation[0], translation[1], translation[2])
                     ;
                 glUniformMatrix4fv(transformMatrix, 1, GL_FALSE, matrix.value_ptr);
+                glUniform4f(offsetLocation, translation[0], translation[1], -2 + translation[2], 0f);
                 glUniform1i(isLine, 0);
 
                 // What to draw
@@ -300,9 +340,14 @@ class Demo : DemoBase {
             bufferInit();
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
-            glClearDepth(1f);
+
             glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LESS);
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_GREATER);
+            glClearDepth(-1f);
+
+            glEnable(GL_LINE_SMOOTH);
+            glLineWidth(10);
 
             while (!glfwWindowShouldClose(window)) {
                 display();
