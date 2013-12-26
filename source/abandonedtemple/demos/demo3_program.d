@@ -18,6 +18,15 @@ interface ShaderBase {
 mixin template Shader() {
     import std.algorithm : startsWith;
     import std.stdio : writefln;
+    import derelict.opengl3.gl3 :
+        glCreateShader,
+        glShaderSource,
+        glCompileShader,
+        glGetShaderiv,
+        GL_COMPILE_STATUS,
+        glGetShaderInfoLog,
+        glDeleteShader;
+
     static ShaderType type;
     static string source;
 
@@ -120,6 +129,15 @@ interface ProgramBase {
 
 mixin template _Program() {
     import std.stdio : writefln;
+    import derelict.opengl3.gl3 :
+        glUseProgram,
+        glCreateProgram,
+        glAttachShader,
+        glLinkProgram,
+        glGetProgramiv,
+        GL_LINK_STATUS,
+        glGetProgramInfoLog;
+
     int _location;
     ShaderBase[] shaders;
 
@@ -151,7 +169,7 @@ mixin template _Program() {
     }
 }
 
-string generateUniformClass(string[string] uniforms) {
+string generateUniformClass(string name, string[string] uniforms) {
     import std.algorithm : join;
     string[] uniformInit;
     string[] uniformLoad;
@@ -161,8 +179,8 @@ string generateUniformClass(string[string] uniforms) {
     string prelog = `
     class Uniforms {
         string[string] _uniforms;
-        Program _program;
-        this(Program program) {
+        ` ~ name ~ ` _program;
+        this(` ~ name ~ ` program) {
             _program = program;
             _uniforms = ` ~ to!string(uniforms) ~ `;
             ` ~ uniformInit.join() ~ `
@@ -177,16 +195,6 @@ string generateUniformClass(string[string] uniforms) {
     }
     string postlog = `    }`;
     return prelog ~ guts ~ postlog;
-}
-
-string program_uniforms(string[string][] shader_uniforms) {
-    string[string] uniforms;
-    foreach (string[string] single_shader_uniforms; shader_uniforms) {
-        foreach (string name, string type; single_shader_uniforms) {
-            uniforms[name] = type;
-        }
-    }
-    return generateUniformClass(uniforms);
 }
 
 struct ShaderData {
@@ -251,7 +259,7 @@ string program_from_shaders(string name, ShaderData[] shaders) {
 import abandonedtemple.demos.demo3_program : ProgramBase, ShaderBase, Shader, Uniform, _Program;
 class ` ~ name ~ ` : ProgramBase {
     ` ~ shaderSetup ~ `
-    ` ~ generateUniformClass(uniforms) ~ `
+    ` ~ generateUniformClass(name, uniforms) ~ `
     Uniforms uniforms;
     mixin _Program;
 
