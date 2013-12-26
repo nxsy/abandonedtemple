@@ -1,5 +1,6 @@
 module abandonedtemple.demos.demo3;
 
+import std.math : sin, abs;
 import std.stdio : writefln;
 
 import derelict.glfw3.glfw3;
@@ -257,23 +258,25 @@ class Demo : DemoBase {
             rainbowProgram.uniforms.u_frustum = frustumMatrix;
 
             auto cube_translations = [
-                [ -0.6f, -0.6f, -0.6f ], // left, bottom, back
-                [ -0.6f,    0f,  0.6f ], // left, middle, front
-                [ -0.6f,  0.6f,    0f ], // left, top, middle
-                [    0f, -0.6f,  0.6f ], // middle, bottom, front
-                [    0f,    0f,    0f ], // middle, middle, middle
-                [    0f,  0.6f, -0.6f ], // middle, top, back
-                [  0.6f, -0.6f,    0f ], // right, bottom, middle
-                [  0.6f,    0f, -0.6f ], // right, middle, back
-                [  0.6f,  0.6f,  0.6f ], // right, top, front
+                [ -1.0f, -1.0f, -1.0f, 2f, -4.5f ], // left, bottom, back
+                [ -1.0f,    0f,  1.0f, -2f, -3.5f ], // left, middle, front
+                [ -1.0f,  1.0f,    0f, 1f, 2.5f ], // left, top, middle
+                [    0f, -1.0f,  1.0f, -1f, 2.5f ], // middle, bottom, front
+                [    0f,    0f,    0f, 9f, 5.5f ], // middle, middle, middle
+                [    0f,  1.0f, -1.0f, -3f, 6.5f ], // middle, top, back
+                [  1.0f, -1.0f,    0f, 1f, -2.5f ], // right, bottom, middle
+                [  1.0f,    0f, -1.0f, -2f, -4.5f ], // right, middle, back
+                [  1.0f,  1.0f,  1.0f, 2f, 7.5f ], // right, top, front
             ];
 
             foreach (float[] translation; cube_translations) {
                 auto matrix = mat4.identity
-                    .scale(0.2, 0.2, 0.2)
+                    .rotatez(timeDiff * translation[3])
+                    .rotatex(timeDiff * translation[4])
+                    .scale(0.3, 0.3, 0.3)
                     ;
                 rainbowProgram.uniforms.u_transform = matrix;
-                rainbowProgram.uniforms.u_offset = vec4(translation[0], translation[1], -2 + translation[2], 0f);
+                rainbowProgram.uniforms.u_offset = vec4((translation[0] + 0.1) * (1 + sin(timeDiff * (4 / translation[3]))), translation[1] * (1 + sin(timeDiff / 2) / 4), -3.5 + translation[2], 0f);
 
                 // What to draw
                 rainbowCube.draw();
