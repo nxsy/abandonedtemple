@@ -12,6 +12,7 @@
     "dependencies": {
         "derelict-glfw3": "~master",
         "derelict-gl3": "~master",
-        "gl3n": "~master"
+        "gl3n": "~master",
+        "derelict-stb_image": { "version": "~master", "path": "../DerelictStb_image/" }
     }
 }

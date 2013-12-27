@@ -73,6 +73,7 @@ string shader(string name, ShaderType type, string source) {
 
     ~this() {
         if (_location) {
+            writefln(`Deleting shader at location %d`, _location);
             glDeleteShader(_location);
         }
     }
@@ -174,6 +175,9 @@ string generateUniformClass(string name, string[string] uniforms) {
     string[] uniformInit;
     string[] uniformLoad;
     foreach (string name, string type; uniforms) {
+        if (type == "sampler2D") {
+            type = "int";
+        }
         uniformInit ~= name ~ ` = new Uniform!` ~ type ~ `("` ~ name ~ `", _program);`;
     }
     string prelog = `
@@ -191,6 +195,9 @@ string generateUniformClass(string name, string[string] uniforms) {
 `;
     string guts = "";
     foreach (string name, string type; uniforms) {
+        if (type == "sampler2D") {
+            type = "int";
+        }
         guts ~= "        Uniform!" ~ type ~ " " ~ name ~ ";\n";
     }
     string postlog = `    }`;
@@ -267,6 +274,11 @@ class ` ~ name ~ ` : ProgramBase {
         ` ~ shaderLoad ~ `
         loadProgram();
         uniforms = new Uniforms(this);
+    }
+
+    ~this() {
+        writefln("Deleting shader at location %d", _location);
+        glDeleteProgram(_location);
     }
 
 }

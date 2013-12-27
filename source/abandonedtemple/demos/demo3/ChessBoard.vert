@@ -14,10 +14,10 @@ void main(){
     x = floor(gl_InstanceID / width);
     float y = mod(gl_InstanceID, width);
     if (mod(gl_InstanceID + x, 2) > 0.1) {
-        Color = vec3(0.8, 0.8, 0.8);
+        Color = vec3(0.9, 0.9, 0.9);
     } else {
-        Color = vec3(0.1, 0.1, 0.1);
+        Color = vec3(0.7, 0.7, 0.7);
     }
-    vec4 offset = u_offset + vec4(y * 0.4, 0, -x * 0.4, 0);
+    vec4 offset = u_offset + vec4(y * 0.8, 0, -x * 0.8, 0);
     gl_Position = (pos * u_transform + offset) * u_frustum;
 }
