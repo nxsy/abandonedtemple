@@ -1,0 +1,16 @@
+{
+    "name": "derelict-stb_image",
+    "description": "A dynamic binding the stb_image image loader.",
+    "homepage": "https://github.com/nxsy/DerelictStb_image",
+    "license": "MIT",
+    "authors": [
+        "Neil Blakey-Milner"
+    ],
+
+    "targetName": "DerelictStb_image",
+    "targetPath": "lib",
+
+    "dependencies": {
+        "derelict-util": ">=1.0.0"
+    }
+}

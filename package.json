@@ -7,12 +7,15 @@
 
     "targetPath": "build/bin",
 
+    "copyFiles": ["assets/dice_texture.png"],
+    "copyFiles-osx-x86_64": ["libs/osx/libglfw.3.dylib", "libs/osx/stb_image.0.dylib"],
+
     "dflags-dmd": ["-J."],
 
     "dependencies": {
         "derelict-glfw3": "~master",
         "derelict-gl3": "~master",
         "gl3n": "~master",
-        "derelict-stb_image": { "version": "~master", "path": "../DerelictStb_image/" }
+        "derelict-stb_image": { "version": "~master", "path": "dependencies/DerelictStb_image/" }
     }
 }

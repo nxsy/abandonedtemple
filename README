@@ -1,13 +1,8 @@
 Abandoned Temple
 ----------------
 
-Don't have a D compiler or dub?  Don't know how to build libglfw3?  Any other
-issues?  Look at the bottom of this file!
-
-One-time configure:
-
-    LIBGLFWPATH=/path/to/libglfw3.dylib  # optional, config.sh will ask otherwise
-    sh scripts/config.sh
+Don't have a D compiler or dub?  Getting complaints about missing libraries?
+Any other issues?  Look at the bottom of this file!
 
 Build && run:
 
@@ -32,7 +27,9 @@ you are running Mavericks or later.  Otherwise, sorry, I can't help you.
 How do I build libglfw3?
 ------------------------
 
-Generally, get the source and follow the instructions at:
+If you're using MacOS X, you probably don't need to, since I have included it.
+
+Otherwise, get the source and follow the instructions at:
 
     http://www.glfw.org/download.html
 
@@ -50,6 +47,7 @@ I don't have D or dub
 You can get a D compiler at:
 
     http://dlang.org/download.html
+
 
 You can get dub at:
 
