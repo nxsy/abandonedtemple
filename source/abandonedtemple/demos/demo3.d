@@ -6,6 +6,7 @@ import std.stdio : writefln;
 import derelict.glfw3.glfw3;
 import derelict.opengl3.gl3;
 import derelict.stb_image.stb_image;
+import derelict.assimp3.assimp;
 
 import gl3n.linalg;
 
@@ -14,10 +15,12 @@ import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
 import abandonedtemple.demos.demo3_glwrapper :
     VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D;
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
+import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
 
 mixin(program_from_shader_filenames("RainbowProgram", ["demo3/FragmentShader.frag","demo3/VertexShader.vert"]));
 mixin(program_from_shader_filenames("ChessProgram", ["demo3/FragmentShader.frag","demo3/ChessBoard.vert"]));
 mixin(program_from_shader_filenames("DiceFaceProgram", ["demo3/DiceFace.frag","demo3/DiceFace.vert"]));
+mixin(program_from_shader_filenames("AssetProgram", ["demo3/Asset.frag","demo3/Asset.vert"]));
 
 class RainbowCube {
     VertexArray va;
@@ -341,16 +344,43 @@ class DiceFace {
     }
 }
 
+class AssetDrawer {
+    VertexArray va;
+    AssetProgram program;
+    Asset asset;
+
+    this(AssetProgram program_) {
+        program = program_;
+
+        program.use();
+        va = new VertexArray();
+        va.bind();
+
+        string filename = "dice.obj";
+        auto scene = importFile(filename);
+        //describeScene(scene);
+        auto mesh = scene.mMeshes[0];
+        asset = new Asset(scene, mesh, va);
+    }
+
+    void draw() {
+        program.use();
+        asset.draw();
+    }
+}
+
 class Demo : DemoBase {
     mixin DemoMixin;
     private {
         RainbowCube rainbowCube;
         ChessCube chessCube;
         DiceFace diceFace;
+        AssetDrawer assetDrawer;
 
         ChessProgram chessProgram;
         RainbowProgram rainbowProgram;
         DiceFaceProgram diceFaceProgram;
+        AssetProgram assetProgram;
 
         mat4 frustumMatrix;
 
@@ -358,6 +388,7 @@ class Demo : DemoBase {
             chessCube = new ChessCube(chessProgram);
             rainbowCube = new RainbowCube(rainbowProgram);
             diceFace = new DiceFace(diceFaceProgram);
+            assetDrawer = new AssetDrawer(assetProgram);
         }
 
         mat4 calculateFrustum(float scale, float aspect, float near, float far) {
@@ -442,7 +473,7 @@ class Demo : DemoBase {
                 .rotatex(timeDiff)
                 .scale(0.5, 0.5, 0.5);
             diceFaceProgram.uniforms.u_transform = matrix;
-            diceFaceProgram.uniforms.u_offset = vec4(0, 0, -4, 0);
+            diceFaceProgram.uniforms.u_offset = vec4(2, 0, -4, 0);
 
 
             // What to draw
@@ -453,6 +484,20 @@ class Demo : DemoBase {
             glUseProgram(0);
         }
 
+        void drawAsset() {
+            assetProgram.use();
+            assetProgram.uniforms.u_frustum.setTranspose(true);
+            assetProgram.uniforms.u_frustum = frustumMatrix;
+
+            auto matrix = mat4.identity
+                .rotatez(timeDiff)
+                .rotatex(timeDiff)
+                .scale(0.5, 0.5, 0.5);
+            assetProgram.uniforms.u_transform = matrix;
+            assetProgram.uniforms.u_offset = vec4(0, 0, -4, 0);
+
+            assetDrawer.draw();
+        }
 
         void display() {
             updateFrustum();
@@ -462,13 +507,16 @@ class Demo : DemoBase {
             drawRainbowCubes();
             drawChessCubes();
             drawDiceFace();
+            drawAsset();
         }
 
         void init() {
             DerelictStb_image.load();
+            DerelictASSIMP3.load();
             rainbowProgram = new RainbowProgram();
             diceFaceProgram = new DiceFaceProgram();
             chessProgram = new ChessProgram();
+            assetProgram = new AssetProgram();
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
 
             bufferInit();
