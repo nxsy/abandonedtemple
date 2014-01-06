@@ -17,353 +17,56 @@ import abandonedtemple.demos.demo3_glwrapper :
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
 
-mixin(program_from_shader_filenames("RainbowProgram", ["demo3/FragmentShader.frag","demo3/VertexShader.vert"]));
-mixin(program_from_shader_filenames("ChessProgram", ["demo3/FragmentShader.frag","demo3/ChessBoard.vert"]));
-mixin(program_from_shader_filenames("DiceFaceProgram", ["demo3/DiceFace.frag","demo3/DiceFace.vert"]));
-mixin(program_from_shader_filenames("AssetProgram", ["demo3/Asset.frag","demo3/Asset.vert"]));
+mixin(program_from_shader_filenames("_AssetProgram", ["demo3/Asset.frag","demo3/Asset.vert"]));
 
-class RainbowCube {
-    VertexArray va;
-    ArrayBuffer vertices;
-    ElementArrayBuffer cube;
-    ElementArrayBuffer lines;
-
-    RainbowProgram program;
-
-    this(RainbowProgram p) {
-        program = p;
-
-        va = new VertexArray();
-        va.bind();
-
-        const float vertices_[] = [
-            -1f, -1f, -1f, 1f,   1f,  0f, 0f,
-            -1f,  1f, -1f, 1f,   0f,  1f, 0f,
-             1f,  1f, -1f, 1f,   0f,  0f, 1f,
-             1f, -1f, -1f, 1f,   1f,  1f, 0f,
-
-            -1f, -1f,  1f, 1f,   0f,  0f, 1f,
-            -1f,  1f,  1f, 1f,   1f,  1f, 0f,
-             1f,  1f,  1f, 1f,   1f,  0f, 0f,
-             1f, -1f,  1f, 1f,   0f,  1f, 0f,
-        ];
-        vertices = new ArrayBuffer();
-        vertices.setData!(const float[])(vertices_, GL_STATIC_DRAW);
-
-        ushort cube_elements[] = [
-            // back face
-            0, 1, 2,
-            0, 2, 3,
-            // front face
-            4, 5, 6,
-            4, 6, 7,
-            // left face
-            0, 4, 5,
-            0, 1, 5,
-            // right face
-            2, 6, 7,
-            2, 3, 7,
-            // bottom face
-            0, 3, 4,
-            3, 4, 7,
-            // top face
-            1, 2, 5,
-            2, 5, 6,
-        ];
-        cube = new ElementArrayBuffer();
-        cube.setData!(ushort[])(cube_elements, GL_STATIC_DRAW);
-
-        ushort line_elements[] = [
-            // back face
-            0, 1,
-            1, 2,
-            2, 3,
-            3, 0,
-
-            // front face
-            4, 5,
-            5, 6,
-            6, 7,
-            7, 4,
-
-            // remainder of left face
-            // 0, 1, // already in back face
-            // 4, 5, // already in front face
-            0, 4,
-            1, 5,
-
-            // remainder of right face
-            // 2, 3, // already in back face
-            // 6, 7, // already in front face
-            2, 6,
-            3, 7,
-
-            // top and bottom faces already have all lines
-        ];
-        lines = new ElementArrayBuffer();
-        lines.setData!(ushort[])(line_elements, GL_STATIC_DRAW);
-
-        lines.unbind();
-        va.unbind();
-    }
-
-    void draw() {
-        program.uniforms.is_line = 0;
-        vertices.bind();
-        cube.bind();
-        // Layout of the stuff to draw
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 7 * float.sizeof, cast(void*)(0 * float.sizeof));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * float.sizeof, cast(void*)(4 * float.sizeof));
-
-        // Draw it!
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, cast(void *)0);
-
-        program.uniforms.is_line = 1;
-        lines.bind();
-
-        glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, cast(void *)0);
-    }
-
-    void bind() {
-        va.bind();
-        program.use();
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-    }
-
-    void unbind() {
-        glDisableVertexAttribArray(1);
-        glDisableVertexAttribArray(0);
-        va.unbind();
-    }
+enum UniformBindings : uint {
+    material = 1,
 }
 
-class ChessCube {
-    VertexArray va;
-    ArrayBuffer vertices;
-    ElementArrayBuffer cube;
-    ElementArrayBuffer lines;
+class AssetProgram {
+    _AssetProgram assetProgram;
+    alias assetProgram this;
 
-    ChessProgram program;
-
-    this(ChessProgram p) {
-        program = p;
-
-        va = new VertexArray();
-        va.bind();
-
-        const float vertices_[] = [
-            -1f, -1f, -1f, 1f,   0f,  0f, 0f,
-            -1f,  1f, -1f, 1f,   1f,  1f, 1f,
-             1f,  1f, -1f, 1f,   1f,  1f, 1f,
-             1f, -1f, -1f, 1f,   0f,  0f, 0f,
-
-            -1f, -1f,  1f, 1f,   0f,  0f, 0f,
-            -1f,  1f,  1f, 1f,   1f,  1f, 1f,
-             1f,  1f,  1f, 1f,   1f,  1f, 1f,
-             1f, -1f,  1f, 1f,   0f,  0f, 0f,
-        ];
-        vertices = new ArrayBuffer();
-        vertices.setData!(const float[])(vertices_, GL_STATIC_DRAW);
-
-        ushort cube_elements[] = [
-            // back face
-            0, 1, 2,
-            0, 2, 3,
-            // front face
-            4, 5, 6,
-            4, 6, 7,
-            // left face
-            0, 4, 5,
-            0, 1, 5,
-            // right face
-            2, 6, 7,
-            2, 3, 7,
-            // bottom face
-            0, 3, 4,
-            3, 4, 7,
-            // top face
-            1, 2, 5,
-            2, 5, 6,
-        ];
-        cube = new ElementArrayBuffer();
-        cube.setData!(ushort[])(cube_elements, GL_STATIC_DRAW);
-
-        cube.unbind();
-        va.unbind();
-    }
-
-    void draw() {
-        vertices.bind();
-        cube.bind();
-        // Layout of the stuff to draw
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 7 * float.sizeof, cast(void*)(0 * float.sizeof));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7 * float.sizeof, cast(void*)(4 * float.sizeof));
-
-        // Draw it!
-        glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, cast(void *)0, 8192);
-    }
-
-    void bind() {
-        va.bind();
-        program.use();
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-    }
-
-    void unbind() {
-        glDisableVertexAttribArray(1);
-        glDisableVertexAttribArray(0);
-        va.unbind();
-    }
-}
-
-class DiceFace {
-    VertexArray va;
-    ArrayBuffer vertices;
-    ElementArrayBuffer cube;
-    ElementArrayBuffer lines;
-    Texture2D texture;
-
-    DiceFaceProgram program;
-    import std.path : buildPath, dirName;
-
-    this(DiceFaceProgram p) {
-        program = p;
-
-        va = new VertexArray();
-        va.bind();
-
-        texture = new Texture2D();
-        glActiveTexture(GL_TEXTURE0);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        texture.bind();
-
-        int width, height, comp;
-        string filepath = "dice_texture.png";
-        char* image_data = stbi_load(filepath.ptr, &width, &height, &comp, 4);
-        writefln("Width: %d, Height: %d, Comp: %d", width, height, comp);
-        texture.setData(image_data, width, height);
-
-        const float vertices_[] = [
-            // back face - 1
-            -1f, -1f, -1f, 1f,   1, 0.5, 0.5,  (0/3f),  (0/2f),
-            -1f,  1f, -1f, 1f,   1, 0.5, 0.5,  (0/3f),  (1/2f),
-             1f,  1f, -1f, 1f,   1, 0.5, 0.5,  (1/3f),  (1/2f),
-             1f, -1f, -1f, 1f,   1, 0.5, 0.5,  (1/3f),  (0/2f),
-
-            // front face - 6
-            -1f, -1f,  1f, 1f,   1, 0.5, 0.5,  (2/3f),  (1/2f),
-            -1f,  1f,  1f, 1f,   1, 0.5, 0.5,  (2/3f),  (2/2f),
-             1f,  1f,  1f, 1f,   1, 0.5, 0.5,  (3/3f),  (2/2f),
-             1f, -1f,  1f, 1f,   1, 0.5, 0.5,  (3/3f),  (1/2f),
-
-            // top face - 3
-            -1f,  1f, -1f, 1f,   1, 0.5, 0.5,  (1/3f),  (0/2f),
-            -1f,  1f,  1f, 1f,   1, 0.5, 0.5,  (1/3f),  (1/2f),
-             1f,  1f,  1f, 1f,   1, 0.5, 0.5,  (2/3f),  (1/2f),
-             1f,  1f, -1f, 1f,   1, 0.5, 0.5,  (2/3f),  (0/2f),
-
-            // bottom face - 4
-            -1f, -1f, -1f, 1f,   1, 0.5, 0.5,  (1/3f),  (1/2f),
-            -1f, -1f,  1f, 1f,   1, 0.5, 0.5,  (1/3f),  (2/2f),
-             1f, -1f,  1f, 1f,   1, 0.5, 0.5,  (2/3f),  (2/2f),
-             1f, -1f, -1f, 1f,   1, 0.5, 0.5,  (2/3f),  (1/2f),
-
-            // left face - 2
-            -1f, -1f, -1f, 1f,   1, 0.5, 0.5,  (0/3f),  (1/2f),
-            -1f, -1f,  1f, 1f,   1, 0.5, 0.5,  (0/3f),  (2/2f),
-            -1f,  1f,  1f, 1f,   1, 0.5, 0.5,  (1/3f),  (2/2f),
-            -1f,  1f, -1f, 1f,   1, 0.5, 0.5,  (1/3f),  (1/2f),
-
-            // right face - 5
-             1f, -1f, -1f, 1f,   1, 0.5, 0.5,  (2/3f),  (0/2f),
-             1f, -1f,  1f, 1f,   1, 0.5, 0.5,  (2/3f),  (1/2f),
-             1f,  1f,  1f, 1f,   1, 0.5, 0.5,  (3/3f),  (1/2f),
-             1f,  1f, -1f, 1f,   1, 0.5, 0.5,  (3/3f),  (0/2f),
-
-        ];
-        vertices = new ArrayBuffer();
-        vertices.setData!(const float[])(vertices_, GL_STATIC_DRAW);
-
-        ushort cube_elements[];
-        foreach (int x; [0,1,2,3,4,5]) {
-            foreach (int y; [0, 1, 2, 0, 2, 3]) {
-                cube_elements ~= cast(ushort)((x*4) + y);
-            }
-        }
-        cube = new ElementArrayBuffer();
-        cube.setData!(ushort[])(cube_elements, GL_STATIC_DRAW);
-
-        ushort line_elements[];
-        foreach (int x; [0,1,2,3,4,5]) {
-            foreach (int y; [0, 1, 1, 2, 2, 3, 3, 0]) {
-                line_elements ~= cast(ushort)((x*4) + y);
-            }
-        }
-        lines = new ElementArrayBuffer();
-        lines.setData!(ushort[])(line_elements, GL_STATIC_DRAW);
-
-        lines.unbind();
-        va.unbind();
-    }
-
-    void draw() {
-        program.uniforms.is_line = 0;
-        program.uniforms.tex = 0;
-        vertices.bind();
-        cube.bind();
-        texture.bind();
-        // Layout of the stuff to draw
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 9 * float.sizeof, cast(void*)(0 * float.sizeof));
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * float.sizeof, cast(void*)(4 * float.sizeof));
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 9 * float.sizeof, cast(void*)(7 * float.sizeof));
-
-        // Draw it!
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, cast(void *)0);
-
-        program.uniforms.is_line = 1;
-        lines.bind();
-
-        glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, cast(void *)0);
-    }
-
-    void bind() {
-        va.bind();
-        program.use();
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-    }
-
-    void unbind() {
-        glDisableVertexAttribArray(2);
-        glDisableVertexAttribArray(1);
-        glDisableVertexAttribArray(0);
-        va.unbind();
+    this() {
+        assetProgram = new _AssetProgram();
+        uint materialBlock = glGetUniformBlockIndex(location, "Material");
+        glUniformBlockBinding(location, materialBlock, UniformBindings.material);
     }
 }
 
 class AssetDrawer {
-    VertexArray va;
     AssetProgram program;
     Asset asset;
 
-    this(AssetProgram program_) {
+    vec4 offset;
+    vec3 rotation;
+    vec3 rotation_rate;
+    vec3 scale;
+
+    this(AssetProgram program_, string filename) {
         program = program_;
 
-        program.use();
-        va = new VertexArray();
-        va.bind();
-
-        string filename = "dice.obj";
         auto scene = importFile(filename);
         //describeScene(scene);
-        auto mesh = scene.mMeshes[0];
-        asset = new Asset(scene, mesh, va);
+        asset = new Asset(scene, UniformBindings.material);
+        scale = vec3(0.5);
+        offset = vec4(0, 0, -2.5, 0);
+        rotation = vec3(0);
+        rotation_rate = vec4(1);
     }
 
-    void draw() {
+    void draw(double timeDiff) {
+        auto matrix = mat4.identity
+            .rotatez(timeDiff * rotation_rate.z)
+            .rotatey(timeDiff * rotation_rate.y)
+            .rotatex(timeDiff * rotation_rate.x)
+            .rotatex(rotation.x)
+            .rotatey(rotation.y)
+            .rotatez(rotation.z)
+            .scale(scale.x, scale.y, scale.z);
+        program.uniforms.u_transform = matrix;
+        program.uniforms.u_offset = offset;
+
         program.use();
         asset.draw();
     }
@@ -372,23 +75,26 @@ class AssetDrawer {
 class Demo : DemoBase {
     mixin DemoMixin;
     private {
-        RainbowCube rainbowCube;
-        ChessCube chessCube;
-        DiceFace diceFace;
-        AssetDrawer assetDrawer;
+        AssetDrawer assetDrawers[];
 
-        ChessProgram chessProgram;
-        RainbowProgram rainbowProgram;
-        DiceFaceProgram diceFaceProgram;
         AssetProgram assetProgram;
 
         mat4 frustumMatrix;
 
         void bufferInit() {
-            chessCube = new ChessCube(chessProgram);
-            rainbowCube = new RainbowCube(rainbowProgram);
-            diceFace = new DiceFace(diceFaceProgram);
-            assetDrawer = new AssetDrawer(assetProgram);
+            AssetDrawer a;
+
+            a  = new AssetDrawer(assetProgram, "dice.obj");
+            a.offset = vec4(-2.25, 0, -4, 0);
+            a.rotation_rate = vec3(2, 0.5, 0);
+            a.scale = vec3(1);
+            assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, "golem.obj");
+            a.offset = vec4(2.25, 1, -4, 0);
+            a.scale = vec3(0.4);
+            a.rotation_rate = vec3(0, 1.25, 0);
+            assetDrawers ~= a;
         }
 
         mat4 calculateFrustum(float scale, float aspect, float near, float far) {
@@ -406,97 +112,14 @@ class Demo : DemoBase {
             frustumMatrix = mat4.identity * calculateFrustum(1f, aspect, 0.5f, 100f);
         }
 
-        void drawRainbowCubes() {
-            rainbowCube.bind();
-
-            rainbowProgram.uniforms.u_frustum.setTranspose(true);
-            rainbowProgram.uniforms.u_frustum = frustumMatrix;
-
-            auto cube_translations = [
-                [ -1.2f, -1.0f, -1.2f, 2f, -4.5f ], // left, bottom, back
-                [ -1.2f,    0f,  1.2f, -2f, -3.5f ], // left, middle, front
-                [ -1.2f,  1.2f,    0f, 1f, 2.5f ], // left, top, middle
-                [    0f, -1.0f,  1.2f, -1f, 2.5f ], // middle, bottom, front
-//                [    0f,    0f,    0f, 9f, 5.5f ], // middle, middle, middle
-                [    0f,  1.2f, -1.2f, -3f, 6.5f ], // middle, top, back
-                [  1.2f, -1.0f,    0f, 1f, -2.5f ], // right, bottom, middle
-                [  1.2f,    0f, -1.2f, -2f, -4.5f ], // right, middle, back
-                [  1.2f,  1.2f,  1.2f, 2f, 7.5f ], // right, top, front
-            ];
-
-            foreach (float[] translation; cube_translations) {
-                auto matrix = mat4.identity
-                    .rotatez(timeDiff * translation[3])
-                    .rotatex(timeDiff * translation[4])
-                    .scale(0.3, 0.3, 0.3)
-                    ;
-                rainbowProgram.uniforms.u_transform = matrix;
-                rainbowProgram.uniforms.u_offset = vec4((translation[0] + 0.1) * (1 + sin(timeDiff * (4 / translation[3])) / 2), translation[1] * (1 + sin(timeDiff / 2) / 4), -3.5 + translation[2], 0f);
-
-                // What to draw
-                rainbowCube.draw();
-            }
-
-            // Disable all the things
-            rainbowCube.unbind();
-            glUseProgram(0);
-        }
-
-        void drawChessCubes() {
-            chessCube.bind();
-
-            chessProgram.uniforms.u_frustum.setTranspose(true);
-            chessProgram.uniforms.u_frustum = frustumMatrix;
-
-            auto matrix = mat4.identity.scale(0.4, 0.4, 0.4);
-            chessProgram.uniforms.u_transform = matrix;
-            chessProgram.uniforms.u_offset = vec4(-48, -2, -2, 0);
-            chessProgram.uniforms.width = 128;
-
-
-            // What to draw
-            chessCube.draw();
-
-            // Disable all the things
-            chessCube.unbind();
-            glUseProgram(0);
-        }
-
-        void drawDiceFace() {
-            diceFace.bind();
-
-            diceFaceProgram.uniforms.u_frustum.setTranspose(true);
-            diceFaceProgram.uniforms.u_frustum = frustumMatrix;
-
-            auto matrix = mat4.identity
-                .rotatez(timeDiff)
-                .rotatex(timeDiff)
-                .scale(0.5, 0.5, 0.5);
-            diceFaceProgram.uniforms.u_transform = matrix;
-            diceFaceProgram.uniforms.u_offset = vec4(2, 0, -4, 0);
-
-
-            // What to draw
-            diceFace.draw();
-
-            // Disable all the things
-            diceFace.unbind();
-            glUseProgram(0);
-        }
-
         void drawAsset() {
             assetProgram.use();
             assetProgram.uniforms.u_frustum.setTranspose(true);
             assetProgram.uniforms.u_frustum = frustumMatrix;
 
-            auto matrix = mat4.identity
-                .rotatez(timeDiff)
-                .rotatex(timeDiff)
-                .scale(0.5, 0.5, 0.5);
-            assetProgram.uniforms.u_transform = matrix;
-            assetProgram.uniforms.u_offset = vec4(0, 0, -4, 0);
-
-            assetDrawer.draw();
+            foreach(AssetDrawer assetDrawer; assetDrawers) {
+                assetDrawer.draw(timeDiff);
+            }
         }
 
         void display() {
@@ -504,18 +127,12 @@ class Demo : DemoBase {
 
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-            drawRainbowCubes();
-            drawChessCubes();
-            drawDiceFace();
             drawAsset();
         }
 
         void init() {
             DerelictStb_image.load();
             DerelictASSIMP3.load();
-            rainbowProgram = new RainbowProgram();
-            diceFaceProgram = new DiceFaceProgram();
-            chessProgram = new ChessProgram();
             assetProgram = new AssetProgram();
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
 

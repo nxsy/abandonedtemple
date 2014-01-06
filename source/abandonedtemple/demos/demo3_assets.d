@@ -8,8 +8,20 @@ import derelict.opengl3.gl3;
 
 import derelict.stb_image.stb_image : stbi_load;
 
+import gl3n.linalg : vec4;
+
 import abandonedtemple.demos.demo3_glwrapper :
-    VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D;
+    VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D, UniformBuffer,
+    UniformBufferData;
+
+struct Material {
+    vec4 diffuse;
+    vec4 ambient;
+    vec4 specular;
+    vec4 emissive;
+    float shininess;
+    int texCount;
+}
 
 void describeAiNode(const aiNode *node) {
     string name = aiStringToString(node.mName);
@@ -23,7 +35,10 @@ void describeAiNode(const aiNode *node) {
     writefln("    %0.4f, %0.4f, %0.4f, %0.4f", a.c1, a.c2, a.c3, a.c4);
     writefln("    %0.4f, %0.4f, %0.4f, %0.4f", a.d1, a.d2, a.d3, a.d4);
 
-    // TODO: recurse to children
+    const aiNode *children[] = node.mChildren[0..node.mNumChildren];
+    foreach (const aiNode *child; children) {
+        describeAiNode(child);
+    }
 }
 
 void describeMesh(const aiMesh* mesh) {
@@ -173,20 +188,189 @@ ArrayBuffer buildBuffer(bool invert_y = false)(const aiVector3D* list, uint numb
         return f;
 }
 
-class Asset {
+class Texture {
+    Texture2D texture;
+    alias texture this;
+
+    this(string filepath) {
+        texture = new Texture2D();
+        glActiveTexture(GL_TEXTURE0);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        texture.bind();
+
+        int width, height, comp;
+        char* image_data = stbi_load(filepath.ptr, &width, &height, &comp, 4);
+        texture.setData(image_data, width, height);
+    }
+}
+
+class TextureMap {
+    Texture _bound;
+    Texture[string] textures;
+
+    Texture add(string k) {
+        if (k !in textures) {
+            textures[k] = new Texture(k);
+        }
+        return textures[k];
+    }
+
+    void bind(string k) {
+        textures[k].bind();
+        _bound = textures[k];
+    }
+
+    void unbind() {
+        _bound.unbind();
+        _bound = null;
+    }
+}
+
+float[] propertyToFloat(const aiMaterialProperty* property) {
+    return (cast(float *)property.mData)[0..property.mDataLength/4];
+}
+
+int[] propertyToInt(const aiMaterialProperty* property) {
+    return (cast(int*)property.mData)[0..property.mDataLength/4];
+}
+
+string propertyToString(const aiMaterialProperty* property) {
+    char[] t = (cast(char *)property.mData)[4..property.mDataLength-1];
+    return cast(string)t;
+}
+
+struct AnnotatedMaterial {
+    Material _material;
+    alias _material this;
+
+    /// Key is AssImp's "mSemantic" for now.  "1" is diffusion texture.
+    Texture[int] textures;
+
+    UniformBuffer uniformBuffer;
+}
+
+class Materials {
+    AnnotatedMaterial[] materials;
+    //UniformBuffer[] materialBuffers;
+    TextureMap textures;
+    uint materialBinding;
+
+    this(const aiScene* scene, uint materialBinding_, TextureMap textures_) {
+        materialBinding = materialBinding_;
+        const aiMaterial* materials_[] = scene.mMaterials[0..scene.mNumMaterials];
+        textures = textures_;
+
+        foreach (int i, const aiMaterial* m; materials_) {
+            addMaterial(m);
+        }
+    }
+
+    void populateMaterialWithFloats(ref AnnotatedMaterial m, const aiMaterialProperty *property) {
+        string name = aiStringToString(property.mKey);
+        float f[] = propertyToFloat(property);
+        switch (name) {
+            case "$clr.ambient":
+                if (f.length == 3) {
+                    f ~= 1;
+                }
+                m.ambient = vec4(f);
+                break;
+            case "$clr.diffuse":
+                if (f.length == 3) {
+                    f ~= 1;
+                }
+                m.diffuse = vec4(f);
+                break;
+            case "$clr.specular":
+                if (f.length == 3) {
+                    f ~= 1;
+                }
+                m.specular = vec4(f);
+                break;
+            case "$clr.emissive":
+                if (f.length == 3) {
+                    f ~= 1;
+                }
+                m.emissive = vec4(f);
+                break;
+            default:
+        }
+    }
+
+    void populateMaterialWithStrings(ref AnnotatedMaterial m, const aiMaterialProperty *property) {
+        string name = aiStringToString(property.mKey);
+        string s = propertyToString(property);
+
+        switch (name) {
+            case "$tex.file":
+                auto t = textures.add(s);
+                m.textures[property.mSemantic] = t;
+                m.texCount++;
+                break;
+            default:
+        }
+    }
+
+    void populateMaterialWithProperty(ref AnnotatedMaterial m, const aiMaterialProperty *property) {
+        switch (property.mType) {
+            case aiPTI_Integer:
+                int i[] = propertyToInt(property);
+                break;
+            case aiPTI_Float:
+                populateMaterialWithFloats(m, property);
+                break;
+            case aiPTI_String:
+                populateMaterialWithStrings(m, property);
+                break;
+            default:
+                writefln("Unhandled propery named %s", aiStringToString(property.mKey));
+        }
+    }
+
+    void addMaterial(const aiMaterial* material) {
+        AnnotatedMaterial m;
+        m.uniformBuffer = new UniformBuffer();
+        const aiMaterialProperty *properties[] =
+            material.mProperties[0..material.mNumProperties];
+        foreach (const aiMaterialProperty *property; properties) {
+            populateMaterialWithProperty(m, property);
+        }
+        materials ~= m;
+        ubyte data[] = UniformBufferData!Material.getData(m);
+        m.uniformBuffer.setData(data, GL_STATIC_DRAW);
+    }
+
+    void bind(int index) {
+        AnnotatedMaterial m = materials[index];
+        UniformBuffer ub = m.uniformBuffer;
+        ub.bind();
+        // Texture type 1 is Diffuse
+        if (1 in m.textures) {
+            m.textures[1].bind();
+        }
+        //glBindTexture(GL_TEXTURE_2D, m.texCount);
+        ub.bindBase(materialBinding);
+    }
+}
+
+class Mesh {
     VertexArray va;
     ArrayBuffer vertices;
     ArrayBuffer texture_coords;
     ElementArrayBuffer indices;
-    Texture2D texture;
+    Materials materials;
     uint numIndices;
+    int materialIndex;
 
-    this(const aiScene* scene, const aiMesh *mesh, VertexArray va_) {
-        va = va_;
+    this(const aiMesh *mesh, Materials materials_) {
+        materials = materials_;
+        materialIndex = mesh.mMaterialIndex;
+        va = new VertexArray();
         va.bind();
-
         vertices = buildBuffer(mesh.mVertices, mesh.mNumVertices);
-        texture_coords = buildBuffer!true(mesh.mTextureCoords[0], mesh.mNumVertices);
+        if (mesh.mTextureCoords[0]) {
+            texture_coords = buildBuffer!true(mesh.mTextureCoords[0], mesh.mNumVertices);
+        }
 
         const aiFace faces[] = mesh.mFaces[0..mesh.mNumFaces];
         ushort indices_[];
@@ -203,24 +387,13 @@ class Asset {
 
         indices = new ElementArrayBuffer();
         indices.setData!(ushort[])(indices_, GL_STATIC_DRAW);
-
-        texture = new Texture2D();
-        glActiveTexture(GL_TEXTURE0);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        texture.bind();
-
-        int width, height, comp;
-        string filepath = "dice.png";
-        char* image_data = stbi_load(filepath.ptr, &width, &height, &comp, 4);
-        texture.setData(image_data, width, height);
     }
-    ~this() {
-    }
+
     void draw() {
         va.bind();
         indices.bind();
 
-        texture.bind();
+        materials.bind(materialIndex);
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
@@ -229,18 +402,44 @@ class Asset {
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
         vertices.unbind();
 
-        texture_coords.bind();
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, null);
-        texture_coords.unbind();
+        if (texture_coords) {
+            texture_coords.bind();
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, null);
+            texture_coords.unbind();
+        }
 
         glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, cast(void *)0);
 
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(0);
 
-        texture.unbind();
         indices.unbind();
         va.unbind();
+    }
+}
+
+class Asset {
+    Mesh[] meshes;
+    Materials materials;
+    TextureMap textures;
+
+    this(const aiScene* scene, uint materialBinding) {
+        textures = new TextureMap();
+        materials = new Materials(scene, materialBinding, textures);
+
+        const aiMesh* meshes_[] = scene.mMeshes[0..scene.mNumMeshes];
+
+        foreach (const aiMesh *aimesh; meshes_) {
+            Mesh mesh = new Mesh(aimesh, materials);
+            meshes ~= mesh;
+        }
+    }
+    ~this() {
+    }
+    void draw() {
+        foreach (Mesh m; meshes) {
+            m.draw();
+        }
     }
 }
 

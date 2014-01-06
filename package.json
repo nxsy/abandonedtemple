@@ -8,10 +8,14 @@
     "targetPath": "build/bin",
 
     "copyFiles": [
+        "assets/ATTRIBUTIONS",
         "assets/dice.obj",
         "assets/dice.png",
         "assets/dice.mtl",
-        "assets/dice_texture.png"
+        "assets/golem/golem.obj",
+        "assets/golem/golem_diffuse.png",
+        "assets/golem/golem_normal_map.png",
+        "assets/golem/golem.mtl"
     ],
     "copyFiles-osx-x86_64": [
         "libs/osx/libglfw.3.dylib",

@@ -9,11 +9,13 @@ import derelict.opengl3.gl3:
     glGenTextures,
     glGenVertexArrays,
     glBindBuffer,
+    glBindBufferBase,
     glBindTexture,
     glBindVertexArray,
     glBufferData,
     glDeleteBuffers,
     glDeleteVertexArrays,
+    glGetIntegerv,
     glTexImage2D,
     glTexParameteri,
     GL_ARRAY_BUFFER,
@@ -29,6 +31,8 @@ import derelict.opengl3.gl3:
     GL_TEXTURE_MAG_FILTER,
     GL_TEXTURE_WRAP_S,
     GL_TEXTURE_WRAP_T,
+    GL_UNIFORM_BUFFER,
+    GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
     GL_UNSIGNED_BYTE
     ;
 
@@ -88,6 +92,55 @@ class ArrayBuffer {
 class ElementArrayBuffer {
     static uint _type = GL_ELEMENT_ARRAY_BUFFER;
     mixin Buffer;
+}
+
+class UniformBuffer {
+    static uint _type = GL_UNIFORM_BUFFER;
+    mixin Buffer;
+
+    void bindBase(int binding) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, binding, _location);
+    }
+}
+
+/**
+ * Converts an object (including array of objects) into byte representation
+ * with individual objects starting on multiples of
+ * GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT.
+ */
+template UniformBufferData(T) {
+    ubyte[] getData(T[] ms) {
+        writefln("getData(T[] ms)");
+        ubyte data[];
+        int alignment;
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
+
+        ulong padding = alignment - (T.sizeof % alignment);
+        ulong elementsize = T.sizeof + padding;
+
+        data.length = ms.length * elementsize;
+
+        foreach (int i, T m; ms) {
+            ulong start = ms.length * i;
+            data[start..start+T.sizeof] = (cast(ubyte *)(&m))[0..T.sizeof];
+        }
+        return data;
+    }
+
+    ubyte[] getData(T m) {
+        writefln("getData(T m)");
+        ubyte data[];
+        int alignment;
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
+
+        ulong padding = alignment - (T.sizeof % alignment);
+        ulong elementsize = T.sizeof + padding;
+
+        data.length = elementsize;
+
+        data[0..T.sizeof] = (cast(ubyte *)(&m))[0..T.sizeof];
+        return data;
+    }
 }
 
 class Texture2D {
