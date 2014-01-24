@@ -15,12 +15,14 @@
         "assets/golem/golem.obj",
         "assets/golem/golem_diffuse.png",
         "assets/golem/golem_normal_map.png",
-        "assets/golem/golem.mtl"
+        "assets/golem/golem.mtl",
+        "assets/fonts/geo_1.ttf"
     ],
     "copyFiles-osx-x86_64": [
         "libs/osx/libglfw.3.dylib",
         "libs/osx/libassimp.3.dylib",
-        "libs/osx/stb_image.0.dylib"
+        "libs/osx/stb_image.0.dylib",
+        "libs/osx/libfreetype.6.dylib"
     ],
 
     "dflags-dmd": ["-J."],
@@ -29,6 +31,7 @@
         "derelict-glfw3": "~master",
         "derelict-gl3": "~master",
         "derelict-assimp3": "~master",
+        "derelict-ft": "~master",
         "gl3n": "~master",
         "derelict-stb_image": { "version": "~master", "path": "dependencies/DerelictStb_image/" }
     }

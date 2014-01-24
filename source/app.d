@@ -6,7 +6,7 @@ import std.getopt : getopt;
 import abandonedtemple.demos.base;
 
 void main(string[] args) {
-    auto demo = "demo1";
+    auto demo = "demo3";
     getopt(args, "demo", &demo);
 
     auto demo_classname = "abandonedtemple.demos." ~ demo ~ ".Demo";

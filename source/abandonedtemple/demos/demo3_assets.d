@@ -6,11 +6,11 @@ import std.stdio : writef, writefln;
 import derelict.assimp3.assimp;
 import derelict.opengl3.gl3;
 
-import derelict.stb_image.stb_image : stbi_load;
+import derelict.stb_image.stb_image : stbi_load, DerelictStb_image;
 
 import gl3n.linalg : vec4;
 
-import abandonedtemple.demos.demo3_glwrapper :
+import abandonedtemple.glwrapper :
     VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D, UniformBuffer,
     UniformBufferData;
 
@@ -191,6 +191,10 @@ ArrayBuffer buildBuffer(bool invert_y = false)(const aiVector3D* list, uint numb
 class Texture {
     Texture2D texture;
     alias texture this;
+
+    static this() {
+        DerelictStb_image.load();
+    }
 
     this(string filepath) {
         texture = new Texture2D();
@@ -419,6 +423,9 @@ class Mesh {
 }
 
 class Asset {
+    static this() {
+        DerelictASSIMP3.load();
+    }
     Mesh[] meshes;
     Materials materials;
     TextureMap textures;
