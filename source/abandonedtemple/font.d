@@ -126,3 +126,122 @@ class Font {
     }
 }
 
+class FontDrawer(P) {
+    private {
+        Font font;
+
+        P program;
+
+        VertexArray va;
+        ArrayBuffer vertices;
+        ElementArrayBuffer elements;
+
+        int fontSize;
+
+        /// screen pixel dimensions
+        int width;
+        int height;
+
+        // ratio from pixels to opengl coordinates
+        float widthRatio;
+        float heightRatio;
+
+        // Number of vertices needed to print word
+        uint num_vertices;
+    }
+
+    protected {
+        /// pixel margin from the right/bottom of the screen
+        int rightMargin = 10;
+        int bottomMargin = 10;
+
+        /// string to display
+        string displayString;
+    }
+
+    this(P program_, int fontSize_, string alphabet) {
+        program = program_;
+        fontSize = fontSize_;
+        font = new Font("geo_1.ttf", fontSize, alphabet);
+
+        vertices = new ArrayBuffer();
+        vertices.bind();
+
+        va = new VertexArray();
+    }
+
+    void draw(double timeDiff) {
+        if (!displayString) {
+            return;
+        }
+        program.use();
+        va.bind();
+        vertices.bind();
+        font.bind();
+        program.uniforms.tex = 0;
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDrawArrays(GL_TRIANGLES, 0, num_vertices);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(0);
+    }
+
+    void update() {
+        int pixelWidth = 0;
+
+        Glyph glyphs[];
+        foreach (char c; displayString) {
+            Glyph g = font.getGlyph(c);
+            glyphs ~= g;
+            pixelWidth += g.width;
+        }
+
+        int scale = 1;
+
+        float glLeft = 1.0 - (scale * widthRatio * (pixelWidth + rightMargin));
+        float glBottom = -1.0 + (scale * heightRatio * (fontSize + bottomMargin));
+        float glTop = -1.0 + (scale * heightRatio * bottomMargin);
+
+        float vertices_[];
+
+        foreach (Glyph g; glyphs) {
+            float glRight = glLeft + (scale * widthRatio * g.width);
+            float texture_left = g.tex_x_left;
+            float texture_right = g.tex_x_right;
+
+            vertices_ ~= [
+                glLeft, glBottom, 0, texture_left, 0,
+                glLeft, glTop, 0, texture_left, 1,
+                glRight, glBottom, 0, texture_right, 0,
+
+                glLeft, glTop, 0, texture_left, 1,
+                glRight, glBottom, 0, texture_right, 0,
+                glRight, glTop, 0, texture_right, 1,
+            ];
+            glLeft = glRight;
+        }
+        num_vertices = cast(uint)glyphs.length * 6;
+
+        vertices.setData!(const float[])(vertices_, GL_STATIC_DRAW);
+
+        va.bind();
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * float.sizeof, cast(void*)(0 * float.sizeof));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * float.sizeof, cast(void*)(3 * float.sizeof));
+        va.unbind();
+    }
+
+    void updateDimensions(int width_, int height_) {
+        width = width_;
+        height = height_;
+
+        widthRatio = 2.0 / width;
+        heightRatio = 2.0 / height;
+
+        if (displayString) {
+            update();
+        }
+    }
+}
+

@@ -15,6 +15,25 @@ mixin template DemoMixin() {
         double lastTime = 0;
         float fps;
 
+        static struct Callbacks {
+            static DemoCallbacksBase[GLFWwindow *] d;
+
+            static void setDemo(GLFWwindow *window, DemoCallbacksBase d_) {
+                d[window] = d_;
+            }
+
+            extern(C) static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) nothrow {
+                try {
+                    d[window].keyCallback(window, key, scancode, action, mods);
+                } catch (Exception e) {
+                    try {
+                        writefln("Exception caught: %s", e);
+                    } catch (Exception e) {
+                    }
+                }
+            }
+        }
+
         void glInit() {
             DerelictGL3.load();
             DerelictGLFW3.load();
@@ -39,6 +58,9 @@ mixin template DemoMixin() {
             glfwMakeContextCurrent(window);
 
             DerelictGL3.reload();
+
+            Callbacks.setDemo(window, this);
+            glfwSetKeyCallback(window, &Callbacks.key_callback);
         }
     }
 

@@ -352,7 +352,6 @@ class Materials {
         if (1 in m.textures) {
             m.textures[1].bind();
         }
-        //glBindTexture(GL_TEXTURE_2D, m.texCount);
         ub.bindBase(materialBinding);
     }
 }
@@ -360,6 +359,7 @@ class Materials {
 class Mesh {
     VertexArray va;
     ArrayBuffer vertices;
+    ArrayBuffer normals;
     ArrayBuffer texture_coords;
     ElementArrayBuffer indices;
     Materials materials;
@@ -372,6 +372,7 @@ class Mesh {
         va = new VertexArray();
         va.bind();
         vertices = buildBuffer(mesh.mVertices, mesh.mNumVertices);
+        normals = buildBuffer(mesh.mNormals, mesh.mNumVertices);
         if (mesh.mTextureCoords[0]) {
             texture_coords = buildBuffer!true(mesh.mTextureCoords[0], mesh.mNumVertices);
         }
@@ -391,16 +392,6 @@ class Mesh {
 
         indices = new ElementArrayBuffer();
         indices.setData!(ushort[])(indices_, GL_STATIC_DRAW);
-    }
-
-    void draw() {
-        va.bind();
-        indices.bind();
-
-        materials.bind(materialIndex);
-
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
 
         vertices.bind();
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
@@ -412,8 +403,26 @@ class Mesh {
             texture_coords.unbind();
         }
 
+        normals.bind();
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, null);
+        normals.unbind();
+        va.unbind();
+
+    }
+
+    void draw() {
+        va.bind();
+        indices.bind();
+
+        materials.bind(materialIndex);
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+
         glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, cast(void *)0);
 
+        glDisableVertexAttribArray(2);
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(0);
 

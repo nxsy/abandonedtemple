@@ -1,14 +1,20 @@
 #version 330 core
-layout(location = 0) in vec3 pos;
-layout(location = 1) in vec3 tex_coord;
+layout(location = 0) in vec3 a_pos;
+layout(location = 1) in vec3 a_tex_coord;
+layout(location = 2) in vec3 a_normal;
 
-uniform mat4 u_transform;
-uniform vec4 u_offset;
-uniform mat4 u_frustum;
+layout(std140) uniform WVP {
+    mat4 world;
+    mat4 view;
+    mat4 projection;
+    mat4 wvp;
+} u_wvp;
 
-out vec3 Tex_Coord;
+out vec3 v_tex_coord;
+out vec3 v_normal;
 
 void main(){
-    Tex_Coord = tex_coord;
-    gl_Position = (vec4(pos,1) * u_transform + u_offset) * u_frustum;
+    v_tex_coord = a_tex_coord;
+    v_normal = (u_wvp.world * vec4(a_normal, 0.0)).xyz;
+    gl_Position = u_wvp.wvp * vec4(a_pos,1);
 }

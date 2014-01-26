@@ -110,12 +110,14 @@ class UniformBuffer {
  */
 template UniformBufferData(T) {
     ubyte[] getData(T[] ms) {
-        writefln("getData(T[] ms)");
         ubyte data[];
         int alignment;
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
 
         ulong padding = alignment - (T.sizeof % alignment);
+        if (padding == alignment) {
+            padding = 0;
+        }
         ulong elementsize = T.sizeof + padding;
 
         data.length = ms.length * elementsize;
@@ -128,12 +130,14 @@ template UniformBufferData(T) {
     }
 
     ubyte[] getData(T m) {
-        writefln("getData(T m)");
         ubyte data[];
         int alignment;
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
 
         ulong padding = alignment - (T.sizeof % alignment);
+        if (padding == alignment) {
+            padding = 0;
+        }
         ulong elementsize = T.sizeof + padding;
 
         data.length = elementsize;

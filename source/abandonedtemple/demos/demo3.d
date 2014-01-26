@@ -9,10 +9,11 @@ import derelict.opengl3.gl3;
 import gl3n.linalg;
 
 import abandonedtemple.glwrapper :
-    VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D;
-import abandonedtemple.font : Font, Glyph;
+    VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D,
+    UniformBuffer, UniformBufferData;
+import abandonedtemple.font : Font, Glyph, FontDrawer;
 
-import abandonedtemple.demos.base : DemoBase;
+import abandonedtemple.demos.base : DemoBase, DemoCallbacksBase;
 import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
@@ -22,6 +23,22 @@ mixin(program_from_shader_filenames("FontProgram", ["demo3/Font.frag","demo3/Fon
 
 enum UniformBindings : uint {
     material = 1,
+    wvp = 2,
+    global_lighting = 3,
+}
+
+struct WVP {
+    mat4 world;
+    mat4 view;
+    mat4 projection;
+    mat4 wvp;
+}
+
+struct GlobalLighting {
+    vec4 color;
+    vec4 direction;
+    float diffuse;
+    float ambient;
 }
 
 class AssetProgram {
@@ -30,170 +47,66 @@ class AssetProgram {
 
     this() {
         assetProgram = new _AssetProgram();
-        uint materialBlock = glGetUniformBlockIndex(location, "Material");
-        glUniformBlockBinding(location, materialBlock, UniformBindings.material);
+        {
+            uint index = glGetUniformBlockIndex(location, "Material");
+            glUniformBlockBinding(location, index, UniformBindings.material);
+        }
+        {
+            uint index = glGetUniformBlockIndex(location, "WVP");
+            glUniformBlockBinding(location, index, UniformBindings.wvp);
+        }
+        {
+            uint index = glGetUniformBlockIndex(location, "GlobalLighting");
+            glUniformBlockBinding(location, index, UniformBindings.global_lighting);
+        }
     }
 }
 
-class FontDrawer {
-    private {
-        Font font;
-
-        FontProgram program;
-
-        VertexArray va;
-        ArrayBuffer vertices;
-        ElementArrayBuffer elements;
-
-        int fontSize;
-
-        /// screen pixel dimensions
-        int width;
-        int height;
-
-        // ratio from pixels to opengl coordinates
-        float widthRatio;
-        float heightRatio;
-
-        // Number of vertices needed to print word
-        uint num_vertices;
-
-        /// pixel margin from the right/bottom of the screen
-        int rightMargin = 10;
-        int bottomMargin = 10;
-
-        /// string to display
-        string displayString;
-    }
-
-    this(FontProgram program_, int fontSize_, string alphabet) {
-        program = program_;
-        fontSize = fontSize_;
-        font = new Font("geo_1.ttf", fontSize, alphabet);
-
-        vertices = new ArrayBuffer();
-        vertices.bind();
-
-        va = new VertexArray();
-    }
-
-    void draw(double timeDiff) {
-        program.use();
-        va.bind();
-        vertices.bind();
-        font.bind();
-        program.uniforms.tex = 0;
-
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glDrawArrays(GL_TRIANGLES, 0, num_vertices);
-        glDisableVertexAttribArray(1);
-        glDisableVertexAttribArray(0);
-    }
-
-    void update() {
-        int pixelWidth = 0;
-
-        Glyph glyphs[];
-        foreach (char c; displayString) {
-            Glyph g = font.getGlyph(c);
-            glyphs ~= g;
-            pixelWidth += g.width;
-        }
-
-        int scale = 1;
-
-        float glLeft = 1.0 - (scale * widthRatio * (pixelWidth + rightMargin));
-        float glBottom = -1.0 + (scale * heightRatio * (fontSize + bottomMargin));
-        float glTop = -1.0 + (scale * heightRatio * bottomMargin);
-
-        float vertices_[];
-
-        foreach (Glyph g; glyphs) {
-            float glRight = glLeft + (scale * widthRatio * g.width);
-            float texture_left = g.tex_x_left;
-            float texture_right = g.tex_x_right;
-
-            vertices_ ~= [
-                glLeft, glBottom, 0, texture_left, 0,
-                glLeft, glTop, 0, texture_left, 1,
-                glRight, glBottom, 0, texture_right, 0,
-
-                glLeft, glTop, 0, texture_left, 1,
-                glRight, glBottom, 0, texture_right, 0,
-                glRight, glTop, 0, texture_right, 1,
-            ];
-            glLeft = glRight;
-        }
-        num_vertices = cast(uint)glyphs.length * 6;
-
-        vertices.setData!(const float[])(vertices_, GL_STATIC_DRAW);
-
-        va.bind();
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * float.sizeof, cast(void*)(0 * float.sizeof));
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * float.sizeof, cast(void*)(3 * float.sizeof));
-        va.unbind();
-    }
-
-}
-
-class FpsDrawer : FontDrawer {
-    private {
-        float fps = 0;
-    }
-
-    this(FontProgram program_, int fontSize_) {
+class FpsDrawer(P) : FontDrawer!P {
+    this(P program_, int fontSize_) {
         super(program_, fontSize_, " 0123456789.fps");
         rightMargin = 150;
     }
 
     void updateFps(float fps_) {
-        fps = fps_;
-        displayString = format("%0.2f fps", fps);
+        displayString = format("%0.2f fps", fps_);
         update();
-    }
-
-    void updateDimensions(int width_, int height_) {
-        width = width_;
-        height = height_;
-
-        widthRatio = 2.0 / width;
-        heightRatio = 2.0 / height;
-
-        if (fps) {
-            update();
-        }
-    }
-
-    override void draw(double timeDiff) {
-        if (fps) {
-            FontDrawer.draw(timeDiff);
-        }
     }
 }
 
-class TimeDrawer : FontDrawer {
-    this(FontProgram program_, int fontSize_) {
+class TimeDrawer(P) : FontDrawer!P {
+    this(P program_, int fontSize_) {
         super(program_, fontSize_, " 0123456789.second");
-    }
-
-    void updateDimensions(int width_, int height_) {
-        width = width_;
-        height = height_;
-
-        widthRatio = 2.0 / width;
-        heightRatio = 2.0 / height;
-
-        if (displayString) {
-            update();
-        }
     }
 
     override void draw(double timeDiff) {
         displayString = format("%0.2f", timeDiff);
         update();
-        FontDrawer.draw(timeDiff);
+        FontDrawer!P.draw(timeDiff);
+    }
+}
+
+class ModeDrawer(P) : FontDrawer!P {
+    DirectionKeyMode mode;
+    this(P program_, int fontSize_) {
+        super(program_, fontSize_, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.");
+        rightMargin = 300;
+    }
+
+    void updateMode(DirectionKeyMode mode_) {
+        mode = mode_;
+        final switch(mode) {
+        case DirectionKeyMode.offset:
+            displayString = "offset";
+            break;
+        case DirectionKeyMode.rotation:
+            displayString = "rotate";
+            break;
+        case DirectionKeyMode.zoom:
+            displayString = "zoom";
+            break;
+        }
+        update();
     }
 }
 
@@ -201,73 +114,140 @@ class AssetDrawer {
     AssetProgram program;
     Asset asset;
 
-    vec4 offset;
+    vec3 offset;
     vec3 rotation;
     vec3 rotation_rate;
     vec3 scale;
+    UniformBuffer matrixBuffer;
+    UniformBuffer lightingBuffer;
+
+    float diffuse;
+    float ambient;
 
     this(AssetProgram program_, string filename) {
+        matrixBuffer = new UniformBuffer();
+        lightingBuffer = new UniformBuffer();
         program = program_;
 
         auto scene = importFile(filename);
         //describeScene(scene);
         asset = new Asset(scene, UniformBindings.material);
         scale = vec3(0.5);
-        offset = vec4(0, 0, -2.5, 0);
+        offset = vec3(0, 0, -2.5);
         rotation = vec3(0);
         rotation_rate = vec4(1);
+
+        diffuse = 0.85f;
+        ambient = 0.15f;
     }
 
-    void draw(double timeDiff) {
-        auto matrix = mat4.identity
+    void setWVP(mat4 world, mat4 view, mat4 projection) {
+        world = world.transposed;
+        view = view.transposed;
+
+        WVP wvp;
+        wvp.world = world;
+        wvp.view = view;
+        wvp.projection = projection;
+        wvp.wvp = world * view * projection;
+
+        ubyte data[] = UniformBufferData!WVP.getData(wvp);
+        matrixBuffer.setData(data, GL_STATIC_DRAW);
+        matrixBuffer.bindBase(UniformBindings.wvp);
+    }
+
+    void setGlobalLighting() {
+        GlobalLighting g;
+        g.color = vec4(1,0.8,0.8,1);
+        g.direction = vec4(
+            vec3(1,0,1).normalized,
+            1);
+        g.diffuse = diffuse;
+        g.ambient = ambient;
+
+        ubyte data[] = UniformBufferData!GlobalLighting.getData(g);
+        lightingBuffer.setData(data, GL_STATIC_DRAW);
+        lightingBuffer.bindBase(UniformBindings.global_lighting);
+    }
+
+    void draw(double timeDiff, mat4 view, mat4 projection) {
+        auto world = mat4.identity
+            .scale(scale.x, scale.y, scale.z)
             .rotatez(timeDiff * rotation_rate.z)
             .rotatey(timeDiff * rotation_rate.y)
             .rotatex(timeDiff * rotation_rate.x)
             .rotatex(rotation.x)
             .rotatey(rotation.y)
             .rotatez(rotation.z)
-            .scale(scale.x, scale.y, scale.z);
-        program.uniforms.u_transform = matrix;
-        program.uniforms.u_offset = offset;
+            .translate(offset.x, offset.y, offset.z)
+            ;
+
+        setWVP(world, view, projection);
+        setGlobalLighting();
 
         program.use();
         asset.draw();
     }
 }
 
-class Demo : DemoBase {
+enum DirectionKeyMode {
+    offset,
+    rotation,
+    zoom,
+}
+
+
+class Demo : DemoBase, DemoCallbacksBase {
     mixin DemoMixin;
     private {
         AssetDrawer assetDrawers[];
-        FpsDrawer fpsDrawer;
-        TimeDrawer timeDrawer;
+        FpsDrawer!FontProgram fpsDrawer;
+        TimeDrawer!FontProgram timeDrawer;
+        ModeDrawer!FontProgram modeDrawer;
 
         AssetProgram assetProgram;
         FontProgram fontProgram;
 
         mat4 frustumMatrix;
+        mat4 camera;
+
+        vec3 camera_offset = vec3(0f);
+        vec3 camera_rotation = vec3(0f);
 
         void bufferInit() {
             AssetDrawer a;
 
-            a  = new AssetDrawer(assetProgram, "dice.obj");
-            a.offset = vec4(-2.25, 0, -4, 0);
-            a.rotation_rate = vec3(2, 0.5, 0);
-            a.scale = vec3(1);
-            assetDrawers ~= a;
-
             a  = new AssetDrawer(assetProgram, "golem.obj");
-            a.offset = vec4(2.25, 1, -4, 0);
-            a.scale = vec3(0.4);
+            a.offset = vec3(4.5, 2.5, 5);
+            a.scale = vec3(0.8);
             a.rotation_rate = vec3(0, 1.25, 0);
             assetDrawers ~= a;
 
-            fpsDrawer = new FpsDrawer(fontProgram, 25);
+            a  = new AssetDrawer(assetProgram, "golem.obj");
+            a.offset = vec3(-4.5, 2.5, 5);
+            a.scale = vec3(0.8);
+            a.rotation_rate = vec3(0, 1.25, 0);
+            a.diffuse = 0f;
+            a.ambient = 1f;
+            assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, "golem.obj");
+            a.offset = vec3(0, 2.5, 5);
+            a.scale = vec3(0.8);
+            a.rotation_rate = vec3(0, 1.25, 0);
+            a.diffuse = 0.25f;
+            a.ambient = 0.75f;
+            assetDrawers ~= a;
+
+            fpsDrawer = new FpsDrawer!FontProgram(fontProgram, 25);
             fpsCallbacks ~= (float fps) { fpsDrawer.updateFps(fps); };
             dimensionCallbacks ~= (int width, int height) { fpsDrawer.updateDimensions(width, height); };
 
-            timeDrawer = new TimeDrawer(fontProgram, 25);
+            timeDrawer = new TimeDrawer!FontProgram(fontProgram, 25);
             dimensionCallbacks ~= (int width, int height) { timeDrawer.updateDimensions(width, height); };
+
+            modeDrawer = new ModeDrawer!FontProgram(fontProgram, 25);
+            dimensionCallbacks ~= (int width, int height) { modeDrawer.updateDimensions(width, height); };
         }
 
         mat4 calculateFrustum(float scale, float aspect, float near, float far) {
@@ -275,23 +255,21 @@ class Demo : DemoBase {
             ret[0][0] = scale / aspect;
             ret[1][1] = scale;
             ret[2][2] = (far+near)/(far-near);
-            ret[2][3] = -1f;
-            ret[3][2] = (2 * far * near)/(far-near);
+            ret[2][3] = 1f;
+            ret[3][2] = -(2 * far * near)/(far-near);
             return ret;
         }
 
         void updateFrustum(int width, int height) {
             auto aspect = cast(float)width / height;
-            frustumMatrix = calculateFrustum(1f, aspect, 0.5f, 100f);
+            frustumMatrix = calculateFrustum(1f, aspect, 0.1f, 100f);
         }
 
         void drawAsset() {
             assetProgram.use();
-            assetProgram.uniforms.u_frustum.setTranspose(true);
-            assetProgram.uniforms.u_frustum = frustumMatrix;
 
             foreach(AssetDrawer assetDrawer; assetDrawers) {
-                assetDrawer.draw(timeDiff);
+                assetDrawer.draw(timeDiff, camera, frustumMatrix);
             }
         }
 
@@ -303,12 +281,18 @@ class Demo : DemoBase {
             timeDrawer.draw(timeDiff);
         }
 
+        void drawMode() {
+            modeDrawer.updateMode(mode);
+            modeDrawer.draw(timeDiff);
+        }
+
         void display() {
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
             drawAsset();
             drawFps();
             drawTime();
+            drawMode();
         }
 
         void init() {
@@ -323,10 +307,62 @@ class Demo : DemoBase {
 
             glEnable(GL_DEPTH_TEST);
             glDepthMask(GL_TRUE);
-            glDepthFunc(GL_GREATER);
-            glClearDepth(-1f);
+            glDepthFunc(GL_LEQUAL);
+            glClearDepth(1f);
 
             glEnable(GL_TEXTURE_2D);
+
+            updateCamera();
         }
+
+        void updateCamera() {
+            camera = mat4.identity
+                .translate(camera_offset.x, camera_offset.y, camera_offset.z)
+                .rotatex(camera_rotation.x)
+                .rotatey(camera_rotation.y)
+                .rotatez(camera_rotation.z)
+                ;
+        }
+    }
+
+    DirectionKeyMode mode;
+
+    void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+        if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+            if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q) {
+                glfwSetWindowShouldClose(window, 1);
+            }
+
+            if (key == GLFW_KEY_M) {
+                mode++;
+                mode %= DirectionKeyMode.max + 1;
+            }
+
+            if (key == GLFW_KEY_C) {
+                camera_offset = vec3(0);
+                camera_rotation = vec3(0);
+            }
+
+            if (mode == DirectionKeyMode.offset) {
+                if (key == GLFW_KEY_RIGHT) { camera_offset.x += 0.1f; }
+                if (key == GLFW_KEY_LEFT) { camera_offset.x -= 0.1f; }
+                if (key == GLFW_KEY_UP) { camera_offset.y += 0.1f; }
+                if (key == GLFW_KEY_DOWN) { camera_offset.y -= 0.1f; }
+            }
+
+            if (mode == DirectionKeyMode.rotation) {
+                if (key == GLFW_KEY_RIGHT) { camera_rotation.y += 0.1f; }
+                if (key == GLFW_KEY_LEFT) { camera_rotation.y -= 0.1f; }
+                if (key == GLFW_KEY_UP) { camera_rotation.x += 0.1f; }
+                if (key == GLFW_KEY_DOWN) { camera_rotation.x -= 0.1f; }
+            }
+
+            if (mode == DirectionKeyMode.zoom) {
+                if (key == GLFW_KEY_UP) { camera_offset.z -= 0.1f; }
+                if (key == GLFW_KEY_DOWN) { camera_offset.z += 0.1f; }
+            }
+        }
+
+        updateCamera();
     }
 }
