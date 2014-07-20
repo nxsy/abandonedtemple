@@ -229,7 +229,7 @@ string program_from_shader_filenames(string name, string basepath, string[] shad
         }
         auto fullpath = filepath; // buildPath(baseDir, filepath);
         shaderdata ~= `ShaderData(ShaderType.` ~ to!string(st) ~ `, import(r"` ~ fullpath ~ `"))`;
- 
+    }
     
     return `
 import abandonedtemple.demos.demo3_program : program_from_shaders, ShaderData, ShaderType;

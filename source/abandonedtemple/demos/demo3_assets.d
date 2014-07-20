@@ -9,12 +9,17 @@ import derelict.opengl3.gl3;
 version (OSX) {
     import derelict.stb_image.stb_image : stbi_load, DerelictStb_image;
 }
+version (Windows) {
+    import derelict.freeimage.freeimage : DerelictFI;
+}
 
 import gl3n.linalg : vec4;
 
 import abandonedtemple.glwrapper :
     VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D, UniformBuffer,
     UniformBufferData;
+
+import abandonedtemple.demos.demo3_image: loadFreeImage;
 
 struct Material {
     vec4 diffuse;
@@ -200,9 +205,12 @@ class Texture {
     string filepath;
 
     static this() {
-		version (OSX) {
-        	DerelictStb_image.load();
-		}
+        version (OSX) {
+            DerelictStb_image.load();
+        }
+        version (Windows) {
+            DerelictFI.load();
+        }
     }
 
     this(string filepath_) {
@@ -213,10 +221,14 @@ class Texture {
         texture.bind();
 
         int width, height, comp;
-		version (OSX) {
-        	char* image_data = stbi_load(filepath.ptr, &width, &height, &comp, 4);
-        	texture.setData(image_data, width, height);
-		}
+        version (OSX) {
+            char* image_data = stbi_load(filepath.ptr, &width, &height, &comp, 4);
+            texture.setData(image_data, width, height);
+        }
+        version (Windows) {
+            char *image_data = loadFreeImage(filepath, &width, &height);
+            texture.setData(image_data, width, height, GL_RGBA8, GL_BGRA);
+        }
     }
 }
 

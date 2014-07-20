@@ -32,6 +32,7 @@
     "copyFiles-windows": [
         "libs/windows/Assimp32.dll",
         "libs/windows/glfw3.dll",
+        "libs/windows/FreeImage.dll",
     ],
 
     "dflags-osx-dmd": ["-Jsource/abandonedtemple/demos/demo3"],
@@ -44,7 +45,7 @@
         "derelict-ft": "~master",
         "gl3n": "~master"
     },
-    "dependencies-osx": {
-        "derelict-stb_image": { "version": "~master", "path": "dependencies/DerelictStb_image/" }
+    "dependencies-windows": {
+        "derelict-fi": ">=1.0.0"
     }
 }
