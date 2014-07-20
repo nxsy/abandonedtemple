@@ -18,8 +18,8 @@ import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
 
-mixin(program_from_shader_filenames("_AssetProgram", ["demo3/Asset.frag","demo3/Asset.vert"]));
-mixin(program_from_shader_filenames("FontProgram", ["demo3/Font.frag","demo3/Font.vert"]));
+mixin(program_from_shader_filenames("_AssetProgram", ["Asset.frag","Asset.vert"]));
+mixin(program_from_shader_filenames("FontProgram", ["Font.frag","Font.vert"]));
 
 enum UniformBindings : uint {
     material = 1,

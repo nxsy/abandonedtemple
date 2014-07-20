@@ -29,15 +29,22 @@
         "libs/osx/stb_image.0.dylib",
         "libs/osx/libfreetype.6.dylib"
     ],
+    "copyFiles-windows": [
+        "libs/windows/Assimp32.dll",
+        "libs/windows/glfw3.dll",
+    ],
 
-    "dflags-dmd": ["-J."],
+    "dflags-osx-dmd": ["-Jsource/abandonedtemple/demos/demo3"],
+    "dflags-windows-dmd": ["-Jsource\\abandonedtemple\\demos\\demo3"],
 
     "dependencies": {
         "derelict-glfw3": "~master",
         "derelict-gl3": "~master",
         "derelict-assimp3": "~master",
         "derelict-ft": "~master",
-        "gl3n": "~master",
+        "gl3n": "~master"
+    },
+    "dependencies-osx": {
         "derelict-stb_image": { "version": "~master", "path": "dependencies/DerelictStb_image/" }
     }
 }

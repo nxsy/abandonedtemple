@@ -114,16 +114,16 @@ template UniformBufferData(T) {
         int alignment;
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
 
-        ulong padding = alignment - (T.sizeof % alignment);
+        size_t padding = alignment - (T.sizeof % alignment);
         if (padding == alignment) {
             padding = 0;
         }
-        ulong elementsize = T.sizeof + padding;
+        size_t elementsize = T.sizeof + padding;
 
         data.length = ms.length * elementsize;
 
-        foreach (int i, T m; ms) {
-            ulong start = ms.length * i;
+        foreach (size_t i, T m; ms) {
+            size_t start = ms.length * i;
             data[start..start+T.sizeof] = (cast(ubyte *)(&m))[0..T.sizeof];
         }
         return data;
@@ -134,11 +134,11 @@ template UniformBufferData(T) {
         int alignment;
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &alignment);
 
-        ulong padding = alignment - (T.sizeof % alignment);
+        size_t padding = alignment - (T.sizeof % alignment);
         if (padding == alignment) {
             padding = 0;
         }
-        ulong elementsize = T.sizeof + padding;
+        size_t elementsize = T.sizeof + padding;
 
         data.length = elementsize;
 

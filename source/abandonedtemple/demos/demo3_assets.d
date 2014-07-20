@@ -6,7 +6,9 @@ import std.stdio : writef, writefln;
 import derelict.assimp3.assimp;
 import derelict.opengl3.gl3;
 
-import derelict.stb_image.stb_image : stbi_load, DerelictStb_image;
+version (OSX) {
+    import derelict.stb_image.stb_image : stbi_load, DerelictStb_image;
+}
 
 import gl3n.linalg : vec4;
 
@@ -153,7 +155,7 @@ void describeMaterial(const aiMaterial* material) {
 
 string aiStringToString(const aiString k) {
     char name[] = [];
-    foreach(ulong i; iota(k.length)) {
+    foreach(size_t i; iota(k.length)) {
         name ~= k.data[i];
     }
     return cast(string) name;
@@ -198,7 +200,9 @@ class Texture {
     string filepath;
 
     static this() {
-        DerelictStb_image.load();
+		version (OSX) {
+        	DerelictStb_image.load();
+		}
     }
 
     this(string filepath_) {
@@ -209,8 +213,10 @@ class Texture {
         texture.bind();
 
         int width, height, comp;
-        char* image_data = stbi_load(filepath.ptr, &width, &height, &comp, 4);
-        texture.setData(image_data, width, height);
+		version (OSX) {
+        	char* image_data = stbi_load(filepath.ptr, &width, &height, &comp, 4);
+        	texture.setData(image_data, width, height);
+		}
     }
 }
 

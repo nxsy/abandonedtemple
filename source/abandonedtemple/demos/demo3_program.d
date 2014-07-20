@@ -227,10 +227,10 @@ string program_from_shader_filenames(string name, string basepath, string[] shad
         if (filepath[$-5 .. $] == ".frag") {
             st = ShaderType.Fragment;
         }
-        auto fullpath = buildPath(baseDir, filepath);
-        shaderdata ~= `ShaderData(ShaderType.` ~ to!string(st) ~ `, import("` ~ fullpath ~ `"))`;
-    }
-
+        auto fullpath = filepath; // buildPath(baseDir, filepath);
+        shaderdata ~= `ShaderData(ShaderType.` ~ to!string(st) ~ `, import(r"` ~ fullpath ~ `"))`;
+ 
+    
     return `
 import abandonedtemple.demos.demo3_program : program_from_shaders, ShaderData, ShaderType;
 mixin(program_from_shaders("` ~ name ~ `", [
