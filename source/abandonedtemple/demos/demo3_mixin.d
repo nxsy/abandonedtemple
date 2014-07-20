@@ -112,6 +112,7 @@ mixin template DemoMixin() {
             glfwGetFramebufferSize(window, &width, &height);
             if (width != old_width || height != old_height) {
                 foreach (void delegate(int width, int height) cb; dimensionCallbacks) {
+                    glViewport(0, 0, width, height);
                     cb(width, height);
                 }
             }
