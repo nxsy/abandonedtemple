@@ -9,6 +9,11 @@
 
     "copyFiles": [
         "assets/ATTRIBUTIONS",
+        "assets/brick_wall/brick.mtl",
+        "assets/brick_wall/brick.obj",
+        "assets/brick_wall/brick_wall2-diff-512.tga",
+        "assets/brick_wall/brick_wall2-nor-512.tga",
+        "assets/brick_wall/brick_wall2-spec-512.tga",
         "assets/dice.obj",
         "assets/dice.png",
         "assets/dice.mtl",

@@ -10,4 +10,4 @@ Ni 1.000000
 d 0.000000
 illum 2
 map_Kd golem_diffuse.png
-map_Disp golem_normal_map.png
+bump golem_normal_map.png

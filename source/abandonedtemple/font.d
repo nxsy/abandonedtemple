@@ -114,6 +114,7 @@ class Font {
     }
 
     void bind() {
+        glActiveTexture(GL_TEXTURE0);
         texture.bind();
     }
 

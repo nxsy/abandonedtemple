@@ -70,6 +70,10 @@ void describeMesh(const aiMesh* mesh) {
         writefln("    Location: %s, %s, %s", v.x, v.y, v.z);
         aiVector3D normals = mesh.mNormals[i];
         writefln("    Normal: %s, %s, %s", normals.x, normals.y, normals.z);
+        aiVector3D tangents = mesh.mTangents[i];
+        writefln("    Tangent: %s, %s, %s", tangents.x, tangents.y, tangents.z);
+        aiVector3D bitangents = mesh.mBitangents[i];
+        writefln("    Bitangent: %s, %s, %s", bitangents.x, bitangents.y, bitangents.z);
         if (max_texture_coords) {
             writefln("    Texture Coords:");
             foreach (int j; iota(max_texture_coords)) {
@@ -191,12 +195,14 @@ ArrayBuffer buildBuffer(bool invert_y = false)(const aiVector3D* list, uint numb
 class Texture {
     Texture2D texture;
     alias texture this;
+    string filepath;
 
     static this() {
         DerelictStb_image.load();
     }
 
-    this(string filepath) {
+    this(string filepath_) {
+        filepath = filepath_;
         texture = new Texture2D();
         glActiveTexture(GL_TEXTURE0);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -307,6 +313,7 @@ class Materials {
 
         switch (name) {
             case "$tex.file":
+                writefln("m.textures[%s] = %s;", property.mSemantic, s);
                 auto t = textures.add(s);
                 m.textures[property.mSemantic] = t;
                 m.texCount++;
@@ -350,7 +357,12 @@ class Materials {
         ub.bind();
         // Texture type 1 is Diffuse
         if (1 in m.textures) {
+            glActiveTexture(GL_TEXTURE0);
             m.textures[1].bind();
+        }
+        if (5 in m.textures) {
+            glActiveTexture(GL_TEXTURE1);
+            m.textures[5].bind();
         }
         ub.bindBase(materialBinding);
     }
@@ -360,6 +372,9 @@ class Mesh {
     VertexArray va;
     ArrayBuffer vertices;
     ArrayBuffer normals;
+    ArrayBuffer tangents;
+    ArrayBuffer bitangents;
+
     ArrayBuffer texture_coords;
     ElementArrayBuffer indices;
     Materials materials;
@@ -373,6 +388,8 @@ class Mesh {
         va.bind();
         vertices = buildBuffer(mesh.mVertices, mesh.mNumVertices);
         normals = buildBuffer(mesh.mNormals, mesh.mNumVertices);
+        tangents = buildBuffer(mesh.mTangents, mesh.mNumVertices);
+        bitangents = buildBuffer(mesh.mBitangents, mesh.mNumVertices);
         if (mesh.mTextureCoords[0]) {
             texture_coords = buildBuffer!true(mesh.mTextureCoords[0], mesh.mNumVertices);
         }
@@ -406,8 +423,16 @@ class Mesh {
         normals.bind();
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, null);
         normals.unbind();
-        va.unbind();
 
+        tangents.bind();
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, null);
+        tangents.unbind();
+
+        bitangents.bind();
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, null);
+        bitangents.unbind();
+
+        va.unbind();
     }
 
     void draw() {
@@ -419,9 +444,13 @@ class Mesh {
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(3);
+        glEnableVertexAttribArray(4);
 
         glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_SHORT, cast(void *)0);
 
+        glDisableVertexAttribArray(4);
+        glDisableVertexAttribArray(3);
         glDisableVertexAttribArray(2);
         glDisableVertexAttribArray(1);
         glDisableVertexAttribArray(0);

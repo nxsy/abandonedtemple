@@ -1,6 +1,6 @@
 module abandonedtemple.demos.demo3;
 
-import std.math : sin;
+import std.math : PI, sin;
 import std.stdio : writefln;
 
 import derelict.glfw3.glfw3;
@@ -32,6 +32,7 @@ struct WVP {
     mat4 view;
     mat4 projection;
     mat4 wvp;
+    mat4 wv;
 }
 
 struct GlobalLighting {
@@ -47,6 +48,8 @@ class AssetProgram {
 
     this() {
         assetProgram = new _AssetProgram();
+        assetProgram.use();
+        assetProgram.uniforms.bumpTex = 1;
         {
             uint index = glGetUniformBlockIndex(location, "Material");
             glUniformBlockBinding(location, index, UniformBindings.material);
@@ -118,38 +121,61 @@ class AssetDrawer {
     vec3 rotation;
     vec3 rotation_rate;
     vec3 scale;
-    UniformBuffer matrixBuffer;
-    UniformBuffer lightingBuffer;
+    static UniformBuffer matrixBuffer;
+    static UniformBuffer lightingBuffer;
 
     float diffuse;
     float ambient;
 
+    static bool normal_mapping = true;
+    static DebugViewMode debugMode;
+
     this(AssetProgram program_, string filename) {
+        auto scene = importFile(filename);
+        Asset asset_ = new Asset(scene, UniformBindings.material);
+        this(program_, asset_);
+    }
+
+    static bool init = false;
+    private void _init() {
         matrixBuffer = new UniformBuffer();
         lightingBuffer = new UniformBuffer();
+        init = true;
+    }
+
+    this(AssetProgram program_, Asset asset_) {
+        if (!init) {
+            _init();
+        }
+
+        asset = asset_;
         program = program_;
 
-        auto scene = importFile(filename);
-        //describeScene(scene);
-        asset = new Asset(scene, UniformBindings.material);
         scale = vec3(0.5);
         offset = vec3(0, 0, -2.5);
         rotation = vec3(0);
-        rotation_rate = vec4(1);
+        rotation_rate = vec3(0);
 
-        diffuse = 0.85f;
-        ambient = 0.15f;
+        diffuse = 0.75f;
+        ambient = 0.25f;
     }
 
     void setWVP(mat4 world, mat4 view, mat4 projection) {
         world = world.transposed;
         view = view.transposed;
 
+        /*
+        world = mat4.identity;
+        view = mat4.identity;
+        projection = mat4.identity;
+        */
+
         WVP wvp;
         wvp.world = world;
         wvp.view = view;
         wvp.projection = projection;
         wvp.wvp = world * view * projection;
+        wvp.wv = world * view;
 
         ubyte data[] = UniformBufferData!WVP.getData(wvp);
         matrixBuffer.setData(data, GL_STATIC_DRAW);
@@ -158,9 +184,9 @@ class AssetDrawer {
 
     void setGlobalLighting() {
         GlobalLighting g;
-        g.color = vec4(1,0.8,0.8,1);
+        g.color = vec4(1,1,1,1);
         g.direction = vec4(
-            vec3(1,0,1).normalized,
+            vec3(-0.5,-0.5,1).normalized,
             1);
         g.diffuse = diffuse;
         g.ambient = ambient;
@@ -186,6 +212,11 @@ class AssetDrawer {
         setGlobalLighting();
 
         program.use();
+        program.uniforms.normal_mapping = normal_mapping ? 1 : 0;
+
+        program.uniforms.show_diffuse_factor = debugMode == DebugViewMode.diffuse_factor ? 1 : 0;
+        program.uniforms.show_bump_map = debugMode == DebugViewMode.show_bump_map ? 1 : 0;
+        program.uniforms.show_bump_map_raw = debugMode == DebugViewMode.show_bump_map_raw ? 1 : 0;
         asset.draw();
     }
 }
@@ -196,6 +227,12 @@ enum DirectionKeyMode {
     zoom,
 }
 
+enum DebugViewMode {
+    normal,
+    diffuse_factor,
+    show_bump_map,
+    show_bump_map_raw,
+}
 
 class Demo : DemoBase, DemoCallbacksBase {
     mixin DemoMixin;
@@ -217,27 +254,85 @@ class Demo : DemoBase, DemoCallbacksBase {
         void bufferInit() {
             AssetDrawer a;
 
-            a  = new AssetDrawer(assetProgram, "golem.obj");
-            a.offset = vec3(4.5, 2.5, 5);
-            a.scale = vec3(0.8);
-            a.rotation_rate = vec3(0, 1.25, 0);
+            auto scene = importFile("brick.obj");
+            //describeScene(scene);
+            Asset cube_asset = new Asset(scene, UniformBindings.material);
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(2, 0, 14.4);
+            a.scale = vec3(0.3);
             assetDrawers ~= a;
 
-            a  = new AssetDrawer(assetProgram, "golem.obj");
-            a.offset = vec3(-4.5, 2.5, 5);
-            a.scale = vec3(0.8);
-            a.rotation_rate = vec3(0, 1.25, 0);
-            a.diffuse = 0f;
-            a.ambient = 1f;
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(2, 0, 12);
+            a.scale = vec3(0.3);
             assetDrawers ~= a;
 
-            a  = new AssetDrawer(assetProgram, "golem.obj");
-            a.offset = vec3(0, 2.5, 5);
-            a.scale = vec3(0.8);
-            a.rotation_rate = vec3(0, 1.25, 0);
-            a.diffuse = 0.25f;
-            a.ambient = 0.75f;
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(4.4, 0, 12);
+            a.scale = vec3(0.3);
             assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(6.8, 0, 9.6);
+            a.scale = vec3(0.3);
+            assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(6.8, 0, 7.2);
+            a.scale = vec3(0.3);
+            assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(-4.4, 0, 14.4);
+            a.scale = vec3(0.3);
+            assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(-4.4, 0, 12);
+            a.scale = vec3(0.3);
+            assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(-6.8, 0, 9.6);
+            a.scale = vec3(0.3);
+            assetDrawers ~= a;
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(-6.8, 0, 7.2);
+            a.scale = vec3(0.3);
+            assetDrawers ~= a;
+
+            /* */
+            a  = new AssetDrawer(assetProgram, "golem.obj");
+            a.offset = vec3(-2.5, 0.5, 6);
+            a.scale = vec3(0.20);
+            //a.rotation_rate = vec3(0, 0.25, 0);
+            a.rotation = vec3(0, PI - 0.5, 0);
+            a.diffuse = 0.9f;
+            a.ambient = 0.1f;
+            assetDrawers ~= a;
+
+            /*
+            a  = new AssetDrawer(assetProgram, "chest.obj");
+            a.offset = vec3(3.5, -1, 8);
+            a.scale = vec3(0.02);
+            //a.rotation_rate = vec3(0, 0.25, 0);
+            a.rotation = vec3(0, 3.75, 0);
+            a.diffuse = 0.9f;
+            a.ambient = 0.1f;
+            assetDrawers ~= a;
+
+            /*
+            a  = new AssetDrawer(assetProgram, "rocks_03.obj");
+            a.offset = vec3(2.5, -1, 6);
+            a.scale = vec3(0.02);
+            //a.rotation_rate = vec3(0, 0.25, 0);
+            a.rotation = vec3(0, 3.75, 0);
+            a.diffuse = 0.9f;
+            a.ambient = 0.1f;
+            assetDrawers ~= a;
+            /* */
 
             fpsDrawer = new FpsDrawer!FontProgram(fontProgram, 25);
             fpsCallbacks ~= (float fps) { fpsDrawer.updateFps(fps); };
@@ -262,7 +357,12 @@ class Demo : DemoBase, DemoCallbacksBase {
 
         void updateFrustum(int width, int height) {
             auto aspect = cast(float)width / height;
-            frustumMatrix = calculateFrustum(1f, aspect, 0.1f, 100f);
+            auto fov_degrees = 45;
+            writefln("fov_degrees: %s", fov_degrees);
+            auto fov_radians = fov_degrees * PI / 180f;
+            auto scale = 1f / tan(fov_radians / 2f);
+            writefln("scale: %s", scale);
+            frustumMatrix = calculateFrustum(scale, aspect, 0.1f, 100f);
         }
 
         void drawAsset() {
@@ -326,6 +426,7 @@ class Demo : DemoBase, DemoCallbacksBase {
     }
 
     DirectionKeyMode mode;
+    DebugViewMode debugMode;
 
     void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
@@ -336,6 +437,16 @@ class Demo : DemoBase, DemoCallbacksBase {
             if (key == GLFW_KEY_M) {
                 mode++;
                 mode %= DirectionKeyMode.max + 1;
+            }
+
+            if (key == GLFW_KEY_D) {
+                debugMode++;
+                debugMode %= DebugViewMode.max + 1;
+                AssetDrawer.debugMode = debugMode;
+            }
+
+            if (key == GLFW_KEY_N) {
+                AssetDrawer.normal_mapping = !AssetDrawer.normal_mapping;
             }
 
             if (key == GLFW_KEY_C) {
