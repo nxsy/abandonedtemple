@@ -1,6 +1,9 @@
 module abandonedtemple.demos.demo3_mixin;
 
 mixin template DemoMixin() {
+    version (Windows) {
+        import derelict.opengl3.wglext : wglSwapIntervalEXT;
+    }
     private {
         int width, height;
         string programName;
@@ -59,6 +62,9 @@ mixin template DemoMixin() {
 
             DerelictGL3.reload();
 
+            version (Windows) {
+                wglSwapIntervalEXT(1);
+            }
             Callbacks.setDemo(window, this);
             glfwSetKeyCallback(window, &Callbacks.key_callback);
         }
