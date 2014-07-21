@@ -17,6 +17,7 @@ import abandonedtemple.demos.base : DemoBase, DemoCallbacksBase;
 import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
+import abandonedtemple.demos.demo3_camera : Camera;
 
 mixin(program_from_shader_filenames("_AssetProgram", ["Asset.frag","Asset.vert"]));
 mixin(program_from_shader_filenames("FontProgram", ["Font.frag","Font.vert"]));
@@ -246,10 +247,8 @@ class Demo : DemoBase, DemoCallbacksBase {
         FontProgram fontProgram;
 
         mat4 frustumMatrix;
-        mat4 camera;
 
-        vec3 camera_offset = vec3(0f);
-        vec3 camera_rotation = vec3(0f);
+        Camera camera;
 
         void bufferInit() {
             AssetDrawer a;
@@ -369,7 +368,7 @@ class Demo : DemoBase, DemoCallbacksBase {
             assetProgram.use();
 
             foreach(AssetDrawer assetDrawer; assetDrawers) {
-                assetDrawer.draw(timeDiff, camera, frustumMatrix);
+                assetDrawer.draw(timeDiff, camera.viewMatrix, frustumMatrix);
             }
         }
 
@@ -412,17 +411,12 @@ class Demo : DemoBase, DemoCallbacksBase {
 
             glEnable(GL_TEXTURE_2D);
 
-            updateCamera();
+            camera.rotation.x = -.4;
+            camera.offset.y = -3;
+            camera.update();
         }
 
-        void updateCamera() {
-            camera = mat4.identity
-                .translate(camera_offset.x, camera_offset.y, camera_offset.z)
-                .rotatex(camera_rotation.x)
-                .rotatey(camera_rotation.y)
-                .rotatez(camera_rotation.z)
-                ;
-        }
+
     }
 
     DirectionKeyMode mode;
@@ -450,30 +444,30 @@ class Demo : DemoBase, DemoCallbacksBase {
             }
 
             if (key == GLFW_KEY_C) {
-                camera_offset = vec3(0);
-                camera_rotation = vec3(0);
+                camera.offset = vec3(0);
+                camera.rotation = vec3(0);
             }
 
             if (mode == DirectionKeyMode.offset) {
-                if (key == GLFW_KEY_RIGHT) { camera_offset.x += 0.1f; }
-                if (key == GLFW_KEY_LEFT) { camera_offset.x -= 0.1f; }
-                if (key == GLFW_KEY_UP) { camera_offset.y += 0.1f; }
-                if (key == GLFW_KEY_DOWN) { camera_offset.y -= 0.1f; }
+                if (key == GLFW_KEY_RIGHT) { camera.offset.x += 0.1f; }
+                if (key == GLFW_KEY_LEFT) { camera.offset.x -= 0.1f; }
+                if (key == GLFW_KEY_UP) { camera.offset.y += 0.1f; }
+                if (key == GLFW_KEY_DOWN) { camera.offset.y -= 0.1f; }
             }
 
             if (mode == DirectionKeyMode.rotation) {
-                if (key == GLFW_KEY_RIGHT) { camera_rotation.y += 0.1f; }
-                if (key == GLFW_KEY_LEFT) { camera_rotation.y -= 0.1f; }
-                if (key == GLFW_KEY_UP) { camera_rotation.x += 0.1f; }
-                if (key == GLFW_KEY_DOWN) { camera_rotation.x -= 0.1f; }
+                if (key == GLFW_KEY_RIGHT) { camera.rotation.y += 0.1f; }
+                if (key == GLFW_KEY_LEFT) { camera.rotation.y -= 0.1f; }
+                if (key == GLFW_KEY_UP) { camera.rotation.x += 0.1f; }
+                if (key == GLFW_KEY_DOWN) { camera.rotation.x -= 0.1f; }
             }
 
             if (mode == DirectionKeyMode.zoom) {
-                if (key == GLFW_KEY_UP) { camera_offset.z -= 0.1f; }
-                if (key == GLFW_KEY_DOWN) { camera_offset.z += 0.1f; }
+                if (key == GLFW_KEY_UP) { camera.offset.z -= 0.1f; }
+                if (key == GLFW_KEY_DOWN) { camera.offset.z += 0.1f; }
             }
         }
 
-        updateCamera();
+        camera.update();
     }
 }
