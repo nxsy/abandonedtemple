@@ -24,22 +24,22 @@ immutable float[int] lastFrameOffsets;
 static this() {
 
     float[int] temp;
-    temp[temp.length] = 0.01f;
-    temp[temp.length] = 0.01f;
-    temp[temp.length] = 0.01f;
-    temp[temp.length] = 0.01f;
-    temp[temp.length] = 0.01f;
-    temp[temp.length] = 0.01f;
-    temp[temp.length] = 0.01f;
-    temp[temp.length] = 0.02f;
-    temp[temp.length] = 0.03f;
-    temp[temp.length] = 0.04f;
-    temp[temp.length] = 0.05f;
-    temp[temp.length] = 0.06f;
-    temp[temp.length] = 0.07f;
-    temp[temp.length] = 0.08f;
-    temp[temp.length] = 0.09f;
-    temp[temp.length] = 0.1f;
+    temp[cast(int)temp.length] = 0.01f;
+    temp[cast(int)temp.length] = 0.01f;
+    temp[cast(int)temp.length] = 0.01f;
+    temp[cast(int)temp.length] = 0.01f;
+    temp[cast(int)temp.length] = 0.01f;
+    temp[cast(int)temp.length] = 0.01f;
+    temp[cast(int)temp.length] = 0.01f;
+    temp[cast(int)temp.length] = 0.02f;
+    temp[cast(int)temp.length] = 0.03f;
+    temp[cast(int)temp.length] = 0.04f;
+    temp[cast(int)temp.length] = 0.05f;
+    temp[cast(int)temp.length] = 0.06f;
+    temp[cast(int)temp.length] = 0.07f;
+    temp[cast(int)temp.length] = 0.08f;
+    temp[cast(int)temp.length] = 0.09f;
+    temp[cast(int)temp.length] = 0.1f;
 
     lastFrameOffsets = assumeUnique(temp);
 }
@@ -129,7 +129,7 @@ class Camera {
         if (directionState[k] != DirectionState.NONE) {
             directionState[k] = DirectionState.LAST;
         }
-        lastCounter[k] = lastFrameOffsets.length - 1;
+        lastCounter[k] = cast(int)lastFrameOffsets.length - 1;
     }
 
 }

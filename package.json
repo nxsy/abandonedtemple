@@ -47,5 +47,8 @@
     },
     "dependencies-windows": {
         "derelict-fi": ">=1.0.0"
+    },
+    "dependencies-osx": {
+        "derelict-stb_image": { "version": "~master", "path": "dependencies/DerelictStb_image/" }
     }
 }

@@ -11,6 +11,7 @@ version (OSX) {
 }
 version (Windows) {
     import derelict.freeimage.freeimage : DerelictFI;
+    import abandonedtemple.demos.demo3_image: loadFreeImage;
 }
 
 import gl3n.linalg : vec4;
@@ -19,7 +20,6 @@ import abandonedtemple.glwrapper :
     VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D, UniformBuffer,
     UniformBufferData;
 
-import abandonedtemple.demos.demo3_image: loadFreeImage;
 
 struct Material {
     vec4 diffuse;
