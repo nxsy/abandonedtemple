@@ -81,6 +81,7 @@ mixin template DemoMixin() {
 
     void delegate (float fps) fpsCallbacks[];
     void delegate (int width, int height) dimensionCallbacks[];
+    void delegate () postPollCallbacks[];
 
     void updateFps() {
         if (!lastTime) {
@@ -126,6 +127,9 @@ mixin template DemoMixin() {
             display();
             glfwSwapBuffers(window);
             glfwPollEvents();
+            foreach (void delegate() cb; postPollCallbacks) {
+                cb();
+            }
         }
     }
 }

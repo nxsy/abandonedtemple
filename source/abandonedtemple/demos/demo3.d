@@ -17,7 +17,7 @@ import abandonedtemple.demos.base : DemoBase, DemoCallbacksBase;
 import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
-import abandonedtemple.demos.demo3_camera : Camera;
+import abandonedtemple.demos.demo3_camera : Camera, Direction;
 
 mixin(program_from_shader_filenames("_AssetProgram", ["Asset.frag","Asset.vert"]));
 mixin(program_from_shader_filenames("FontProgram", ["Font.frag","Font.vert"]));
@@ -392,13 +392,20 @@ class Demo : DemoBase, DemoCallbacksBase {
             drawFps();
             drawTime();
             drawMode();
+
+        }
+
+        void updateCamera() {
+            camera.update(timeDiff);
         }
 
         void init() {
             assetProgram = new AssetProgram();
             fontProgram = new FontProgram();
+            camera = new Camera();
 
             dimensionCallbacks ~= (int width, int height) { updateFrustum(width, height); };
+            postPollCallbacks ~= () { updateCamera(); };
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
 
@@ -411,9 +418,7 @@ class Demo : DemoBase, DemoCallbacksBase {
 
             glEnable(GL_TEXTURE_2D);
 
-            camera.rotation.x = -.4;
-            camera.offset.y = -3;
-            camera.update();
+            camera.update(timeDiff);
         }
 
 
@@ -428,46 +433,40 @@ class Demo : DemoBase, DemoCallbacksBase {
                 glfwSetWindowShouldClose(window, 1);
             }
 
-            if (key == GLFW_KEY_M) {
-                mode++;
-                mode %= DirectionKeyMode.max + 1;
-            }
+            if (mods == 4) {
+                if (key == GLFW_KEY_M) {
+                    mode++;
+                    mode %= DirectionKeyMode.max + 1;
+                }
 
-            if (key == GLFW_KEY_D) {
-                debugMode++;
-                debugMode %= DebugViewMode.max + 1;
-                AssetDrawer.debugMode = debugMode;
-            }
+                if (key == GLFW_KEY_D) {
+                    debugMode++;
+                    debugMode %= DebugViewMode.max + 1;
+                    AssetDrawer.debugMode = debugMode;
+                }
 
-            if (key == GLFW_KEY_N) {
-                AssetDrawer.normal_mapping = !AssetDrawer.normal_mapping;
-            }
+                if (key == GLFW_KEY_N) {
+                    AssetDrawer.normal_mapping = !AssetDrawer.normal_mapping;
+                }
 
-            if (key == GLFW_KEY_C) {
-                camera.offset = vec3(0);
-                camera.rotation = vec3(0);
-            }
-
-            if (mode == DirectionKeyMode.offset) {
-                if (key == GLFW_KEY_RIGHT) { camera.offset.x += 0.1f; }
-                if (key == GLFW_KEY_LEFT) { camera.offset.x -= 0.1f; }
-                if (key == GLFW_KEY_UP) { camera.offset.y += 0.1f; }
-                if (key == GLFW_KEY_DOWN) { camera.offset.y -= 0.1f; }
-            }
-
-            if (mode == DirectionKeyMode.rotation) {
-                if (key == GLFW_KEY_RIGHT) { camera.rotation.y += 0.1f; }
-                if (key == GLFW_KEY_LEFT) { camera.rotation.y -= 0.1f; }
-                if (key == GLFW_KEY_UP) { camera.rotation.x += 0.1f; }
-                if (key == GLFW_KEY_DOWN) { camera.rotation.x -= 0.1f; }
-            }
-
-            if (mode == DirectionKeyMode.zoom) {
-                if (key == GLFW_KEY_UP) { camera.offset.z -= 0.1f; }
-                if (key == GLFW_KEY_DOWN) { camera.offset.z += 0.1f; }
+                if (key == GLFW_KEY_C) {
+                    camera.reset();
+                }
+                return;
             }
         }
 
-        camera.update();
+        if (action == GLFW_PRESS) {
+            if (key == GLFW_KEY_A) { camera.keyPressed(Direction.LEFT); }
+            if (key == GLFW_KEY_D) { camera.keyPressed(Direction.RIGHT); }
+            if (key == GLFW_KEY_S) { camera.keyPressed(Direction.DOWN); }
+            if (key == GLFW_KEY_W) { camera.keyPressed(Direction.UP); }
+        }
+        if (action == GLFW_RELEASE) {
+            if (key == GLFW_KEY_A) { camera.keyUnpressed(Direction.LEFT); }
+            if (key == GLFW_KEY_D) { camera.keyUnpressed(Direction.RIGHT); }
+            if (key == GLFW_KEY_S) { camera.keyUnpressed(Direction.DOWN); }
+            if (key == GLFW_KEY_W) { camera.keyUnpressed(Direction.UP); }
+        }
     }
 }
