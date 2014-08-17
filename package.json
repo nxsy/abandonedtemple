@@ -6,6 +6,7 @@
     "authors": [ "Neil Blakey-Milner" ],
 
     "targetPath": "build/bin",
+    "workingDirectory": "build/bin",
 
     "copyFiles": [
         "assets/ATTRIBUTIONS",
