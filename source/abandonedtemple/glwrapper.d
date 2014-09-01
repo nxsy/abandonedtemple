@@ -43,7 +43,7 @@ class VertexArray {
     }
 
     ~this() {
-        writefln("Destroying Vertex Array at location %d", _location);
+        //writefln("Destroying Vertex Array at location %d", _location);
         glDeleteVertexArrays(1, &_location);
     }
 
@@ -62,7 +62,7 @@ mixin template Buffer() {
         glGenBuffers(1, &_location);
     }
     ~this() {
-        writefln("Destroying buffer of type %s at location %d", _type, _location);
+        //writefln("Destroying buffer of type %s at location %d", _type, _location);
         glDeleteBuffers(1, &_location);
     }
 
@@ -153,7 +153,7 @@ class Texture2D {
         glGenTextures(1, &_location);
     }
     ~this() {
-        writefln("Destroying texture at location %d", _location);
+        //writefln("Destroying texture at location %d", _location);
         glDeleteBuffers(1, &_location);
     }
     void bind() {

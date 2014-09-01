@@ -17,7 +17,7 @@ import abandonedtemple.demos.base : DemoBase, DemoCallbacksBase;
 import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
-import abandonedtemple.demos.demo3_camera : Camera, Direction;
+import abandonedtemple.demos.demo3_camera : ICamera, Camera, CityCamera, Direction;
 
 mixin(program_from_shader_filenames("_AssetProgram", ["Asset.frag","Asset.vert"]));
 mixin(program_from_shader_filenames("FontProgram", ["Font.frag","Font.vert"]));
@@ -111,6 +111,23 @@ class ModeDrawer(P) : FontDrawer!P {
             break;
         }
         update();
+    }
+}
+
+class MouseStatusDrawer(P) : FontDrawer!P {
+    this(P program_, int fontSize_) {
+        super(program_, fontSize_, "0123456789-,. ");
+        rightMargin = 300;
+        //bottomMargin = 1;
+    }
+    void updateMousePosition(double xpos, double ypos) {
+        //writefln("%0.2f, %0.2f", xpos, ypos);
+        displayString = format("%0d, %0d", cast(int)xpos,cast(int)ypos);
+        update();
+    }
+    override void draw(double timeDiff) {
+        writefln("%s",displayString);
+        FontDrawer!P.draw(timeDiff);
     }
 }
 
@@ -242,13 +259,14 @@ class Demo : DemoBase, DemoCallbacksBase {
         FpsDrawer!FontProgram fpsDrawer;
         TimeDrawer!FontProgram timeDrawer;
         ModeDrawer!FontProgram modeDrawer;
+        MouseStatusDrawer!FontProgram mouseStatusDrawer;
 
         AssetProgram assetProgram;
         FontProgram fontProgram;
 
         mat4 frustumMatrix;
 
-        Camera camera;
+        ICamera camera;
 
         void bufferInit() {
             AssetDrawer a;
@@ -256,6 +274,11 @@ class Demo : DemoBase, DemoCallbacksBase {
             auto scene = importFile("brick.obj");
             //describeScene(scene);
             Asset cube_asset = new Asset(scene, UniformBindings.material);
+
+            a  = new AssetDrawer(assetProgram, cube_asset);
+            a.offset = vec3(0, 0, 0);
+            a.scale = vec3(0.1);
+            assetDrawers ~= a;
 
             a  = new AssetDrawer(assetProgram, cube_asset);
             a.offset = vec3(2, 0, 14.4);
@@ -342,6 +365,10 @@ class Demo : DemoBase, DemoCallbacksBase {
 
             modeDrawer = new ModeDrawer!FontProgram(fontProgram, 25);
             dimensionCallbacks ~= (int width, int height) { modeDrawer.updateDimensions(width, height); };
+
+            mouseStatusDrawer = new MouseStatusDrawer!FontProgram(fontProgram, 25);
+            dimensionCallbacks ~= (int width, int height) { mouseStatusDrawer.updateDimensions(width, height); };
+            mouseCursorCallbacks ~= (double xpos, double ypos) { mouseStatusDrawer.updateMousePosition(xpos, ypos); };
         }
 
         mat4 calculateFrustum(float scale, float aspect, float near, float far) {
@@ -356,7 +383,7 @@ class Demo : DemoBase, DemoCallbacksBase {
 
         void updateFrustum(int width, int height) {
             auto aspect = cast(float)width / height;
-            auto fov_degrees = 45;
+            auto fov_degrees = 60;
             writefln("fov_degrees: %s", fov_degrees);
             auto fov_radians = fov_degrees * PI / 180f;
             auto scale = 1f / tan(fov_radians / 2f);
@@ -391,8 +418,9 @@ class Demo : DemoBase, DemoCallbacksBase {
             drawAsset();
             drawFps();
             drawTime();
-            drawMode();
+            //drawMode();
 
+            mouseStatusDrawer.draw(timeDiff);
         }
 
         void updateCamera() {
@@ -402,9 +430,10 @@ class Demo : DemoBase, DemoCallbacksBase {
         void init() {
             assetProgram = new AssetProgram();
             fontProgram = new FontProgram();
-            camera = new Camera();
+            camera = new CityCamera();
 
             dimensionCallbacks ~= (int width, int height) { updateFrustum(width, height); };
+            mouseCursorCallbacks ~= (double xpos, double ypos) { updateRotation(xpos, ypos); };
             postPollCallbacks ~= () { updateCamera(); };
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
@@ -424,6 +453,19 @@ class Demo : DemoBase, DemoCallbacksBase {
 
     }
 
+    double lastXpos, lastYpos;
+    void updateRotation(double xpos, double ypos) {
+        if (isNaN(lastXpos)) {
+            lastXpos = xpos;
+            lastYpos = ypos;
+            return;
+        }
+
+        CityCamera c = cast(CityCamera)camera;
+        c.updateRotation(cast(int)(lastYpos - ypos) % 5, cast(int)(lastXpos - xpos) % 5, 0);
+        lastXpos = xpos;
+        lastYpos = ypos;
+    }
     DirectionKeyMode mode;
     DebugViewMode debugMode;
 

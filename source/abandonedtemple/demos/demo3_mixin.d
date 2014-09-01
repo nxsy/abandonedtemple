@@ -35,6 +35,18 @@ mixin template DemoMixin() {
                     }
                 }
             }
+
+            extern(C) static void cursorpos_callback(GLFWwindow* window, double xpos, double ypos) nothrow {
+                try {
+
+                    d[window].cursorPosCallback(window, xpos, ypos);
+                } catch (Exception e) {
+                    try {
+                        writefln("Exception caught: %s", e);
+                    } catch (Exception e) {
+                    }
+                }
+            }
         }
 
         void glInit() {
@@ -67,6 +79,8 @@ mixin template DemoMixin() {
             }
             Callbacks.setDemo(window, this);
             glfwSetKeyCallback(window, &Callbacks.key_callback);
+            glfwSetCursorPosCallback(window, &Callbacks.cursorpos_callback);
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
 
@@ -82,6 +96,15 @@ mixin template DemoMixin() {
     void delegate (float fps) fpsCallbacks[];
     void delegate (int width, int height) dimensionCallbacks[];
     void delegate () postPollCallbacks[];
+    void delegate (int button, int action, int mods) mouseButtonCallbacks[];
+    void delegate (double xpos, double ypos) mouseCursorCallbacks[];
+
+    void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
+
+        foreach (void delegate(double xpos, double ypos) cb; mouseCursorCallbacks) {
+            cb(xpos, ypos);
+        }
+    }
 
     void updateFps() {
         if (!lastTime) {
@@ -127,6 +150,7 @@ mixin template DemoMixin() {
             display();
             glfwSwapBuffers(window);
             glfwPollEvents();
+
             foreach (void delegate() cb; postPollCallbacks) {
                 cb();
             }
