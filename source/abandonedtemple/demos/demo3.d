@@ -122,12 +122,10 @@ class MouseStatusDrawer(P) : FontDrawer!P {
         //bottomMargin = 1;
     }
     void updateMousePosition(double xpos, double ypos) {
-        //writefln("%0.2f, %0.2f", xpos, ypos);
         displayString = format("%0d, %0d", cast(int)xpos,cast(int)ypos);
         update();
     }
     override void draw(double timeDiff) {
-        writefln("%s",displayString);
         FontDrawer!P.draw(timeDiff);
     }
 }
@@ -471,14 +469,13 @@ class Demo : DemoBase, DemoCallbacksBase {
         } else if (abs(xdiff) < abs(ydiff) / 2) {
             xdiff = 0;
         }
-        c.updateRotation(ydiff / 4, xdiff / 4, 0);
+        c.updateRotation(ydiff / 4, xdiff / 4);
         lastXpos = xpos;
         lastYpos = ypos;
     }
 
     void updateScroll(double xoffset, double yoffset) {
         CityCamera c = cast(CityCamera)camera;
-        writefln("%s, %s", xoffset, yoffset);
         c.updateDistance(yoffset);
     }
 

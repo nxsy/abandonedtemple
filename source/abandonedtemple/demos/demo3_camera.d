@@ -147,9 +147,9 @@ class Camera : ICamera {
 class CityCamera : ICamera {
     private {
         immutable static defaultTarget = vec3(0f, -0.25f, 0f);
-        immutable static defaultRotation = vec3(0f, 0f, 0f);
+        immutable static defaultRotation = vec2(0f, 0f);
         vec3 target = defaultTarget;
-        vec3 rotation = defaultRotation;
+        vec2 plane_rotation = defaultRotation;
         float distance = 3f;
         mat4 _viewMatrix;
         int[Direction] lastCounter;
@@ -187,36 +187,54 @@ class CityCamera : ICamera {
                     break;
             }
 
+            writefln("plane_rotation.x is %s", plane_rotation.x);
+            writefln("plane_rotation.y is %s", plane_rotation.y);
             final switch (direction) {
                 case Direction.UP:
-                    target.z += direction_offset;
+                    target.x -= sin(plane_rotation.y) * direction_offset;
+                    target.z += cos(plane_rotation.y) * direction_offset;
                     break;
                 case Direction.DOWN:
-                    target.z -= direction_offset;
+                    target.x += sin(plane_rotation.y) * direction_offset;
+                    target.z -= cos(plane_rotation.y) * direction_offset;
                     break;
                 case Direction.LEFT:
-                    target.x -= direction_offset;
+                    target.x += sin(plane_rotation.y - (PI/2)) * direction_offset;
+                    target.z -= cos(plane_rotation.y - (PI/2)) * direction_offset;
                     break;
                 case Direction.RIGHT:
-                    target.x += direction_offset;
+                    target.x -= sin(plane_rotation.y - (PI/2)) * direction_offset;
+                    target.z += cos(plane_rotation.y - (PI/2)) * direction_offset;
                     break;
             }
         }
 
-        _viewMatrix = mat4.identity
-            .translate(-target.x, -target.y, -target.z)
-            .rotatex(rotation.x)
-            .rotatey(rotation.y)
-            .rotatez(rotation.z)
-            .translate(0, 0, distance)
-            //.rotatex(-0.2f)
+        vec3 rotation = vec3(plane_rotation, 0f);
+
+        mat4 rotate = mat4.identity
+            .rotatey(plane_rotation.y)
             ;
-        //writefln("%s", _viewMatrix);
+
+        mat4 x_axis_rotate = mat4.identity
+            .rotatex(plane_rotation.x);
+
+        mat4 target_translate = mat4.identity
+            .translate(-target.x, -target.y, -target.z)
+            ;
+
+        mat4 camera_translate = mat4.identity
+            .translate(0, 0, distance)
+            ;
+
+        _viewMatrix = camera_translate *
+            x_axis_rotate *
+            rotate *
+            target_translate;
     }
-    
+
     void reset() {
         target = defaultTarget;
-        rotation = defaultRotation;
+        plane_rotation = defaultRotation;
         foreach(Direction direction; EnumMembers!Direction) {
             directionState[direction] = DirectionState.NONE;
         }
@@ -236,10 +254,9 @@ class CityCamera : ICamera {
         lastCounter[k] = cast(int)lastFrameOffsets.length - 1;
     }
 
-    void updateRotation(float x, float y, float z) {
-        rotation.x += radians(x);
-        rotation.y += radians(y);
-        rotation.z += radians(z);
+    void updateRotation(float x, float y) {
+        plane_rotation.x += radians(x);
+        plane_rotation.y += radians(y);
     }
 
     void updateDistance(float diff) {
