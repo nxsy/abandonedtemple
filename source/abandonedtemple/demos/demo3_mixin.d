@@ -47,6 +47,17 @@ mixin template DemoMixin() {
                     }
                 }
             }
+
+            extern(C) static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) nothrow {
+                try {
+                    d[window].scrollCallback(window, xoffset, yoffset);
+                } catch (Exception e) {
+                    try {
+                        writefln("Exception caught: %s", e);
+                    } catch (Exception e) {
+                    }
+                }
+            }
         }
 
         void glInit() {
@@ -80,6 +91,7 @@ mixin template DemoMixin() {
             Callbacks.setDemo(window, this);
             glfwSetKeyCallback(window, &Callbacks.key_callback);
             glfwSetCursorPosCallback(window, &Callbacks.cursorpos_callback);
+            glfwSetScrollCallback(window, &Callbacks.scroll_callback);
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
@@ -90,7 +102,7 @@ mixin template DemoMixin() {
         this.programName = programName;
     }
     this() {
-        this(1280, 720, this.toString());
+        this(640, 480, this.toString());
     }
 
     void delegate (float fps) fpsCallbacks[];
@@ -98,11 +110,17 @@ mixin template DemoMixin() {
     void delegate () postPollCallbacks[];
     void delegate (int button, int action, int mods) mouseButtonCallbacks[];
     void delegate (double xpos, double ypos) mouseCursorCallbacks[];
+    void delegate (double xoffset, double yoffset) scrollCallbacks[];
 
     void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-
         foreach (void delegate(double xpos, double ypos) cb; mouseCursorCallbacks) {
             cb(xpos, ypos);
+        }
+    }
+
+    void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+        foreach (void delegate(double xoffset, double yoffset) cb; scrollCallbacks) {
+            cb(xoffset, yoffset);
         }
     }
 

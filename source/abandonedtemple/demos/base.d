@@ -9,4 +9,5 @@ interface DemoBase {
 interface DemoCallbacksBase {
     void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
     void cursorPosCallback(GLFWwindow *window, double xpos, double ypos);
+    void scrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 }

@@ -146,12 +146,14 @@ class Camera : ICamera {
 
 class CityCamera : ICamera {
     private {
-        immutable static defaultTarget = vec3(0f, 0f, 0f);
+        immutable static defaultTarget = vec3(0f, -0.25f, 0f);
         immutable static defaultRotation = vec3(0f, 0f, 0f);
         vec3 target = defaultTarget;
         vec3 rotation = defaultRotation;
         float distance = 3f;
         mat4 _viewMatrix;
+        int[Direction] lastCounter;
+        DirectionState[Direction] directionState;
     }
     
     mat4 viewMatrix() {
@@ -164,8 +166,45 @@ class CityCamera : ICamera {
     }
     
     void update(double timeDiff) {
+        foreach(Direction direction; EnumMembers!Direction) {
+            float direction_offset = 0f;
+            final switch (directionState[direction]) {
+                case DirectionState.NONE:
+                    break;
+                case DirectionState.FIRST:
+                    direction_offset = 0.05f;
+                    directionState[direction] = DirectionState.REPEAT;
+                    break;
+                case DirectionState.REPEAT:
+                    direction_offset = 0.1f;
+                    break;
+                case DirectionState.LAST:
+                    direction_offset = lastFrameOffsets[lastCounter[direction]];
+                    lastCounter[direction]--;
+                    if (lastCounter[direction] == 2) {
+                        directionState[direction] = DirectionState.NONE;
+                    }
+                    break;
+            }
+
+            final switch (direction) {
+                case Direction.UP:
+                    target.z += direction_offset;
+                    break;
+                case Direction.DOWN:
+                    target.z -= direction_offset;
+                    break;
+                case Direction.LEFT:
+                    target.x -= direction_offset;
+                    break;
+                case Direction.RIGHT:
+                    target.x += direction_offset;
+                    break;
+            }
+        }
+
         _viewMatrix = mat4.identity
-            .translate(target.x, target.y, target.z)
+            .translate(-target.x, -target.y, -target.z)
             .rotatex(rotation.x)
             .rotatey(rotation.y)
             .rotatez(rotation.z)
@@ -178,29 +217,32 @@ class CityCamera : ICamera {
     void reset() {
         target = defaultTarget;
         rotation = defaultRotation;
-    }
-    
-    void keyPressed(Direction k) {
-        final switch(k) {
-            case Direction.UP:
-                break;
-            case Direction.DOWN:
-                break;
-            case Direction.LEFT:
-                rotation.y += radians(5.0f);
-                break;
-            case Direction.RIGHT:
-                rotation.y -= radians(5.0f);
-                break;
+        foreach(Direction direction; EnumMembers!Direction) {
+            directionState[direction] = DirectionState.NONE;
+        }
+        foreach(Direction direction; EnumMembers!Direction) {
+            lastCounter[direction] = 0;
         }
     }
     
+    void keyPressed(Direction k) {
+        directionState[k] = DirectionState.FIRST;
+    }
+
     void keyUnpressed(Direction k) {
+        if (directionState[k] != DirectionState.NONE) {
+            directionState[k] = DirectionState.LAST;
+        }
+        lastCounter[k] = cast(int)lastFrameOffsets.length - 1;
     }
 
     void updateRotation(float x, float y, float z) {
         rotation.x += radians(x);
         rotation.y += radians(y);
         rotation.z += radians(z);
+    }
+
+    void updateDistance(float diff) {
+        distance += diff;
     }
 }

@@ -7,6 +7,7 @@ import derelict.glfw3.glfw3;
 import derelict.opengl3.gl3;
 
 import gl3n.linalg;
+import gl3n.math;
 
 import abandonedtemple.glwrapper :
     VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D,
@@ -385,7 +386,7 @@ class Demo : DemoBase, DemoCallbacksBase {
             auto aspect = cast(float)width / height;
             auto fov_degrees = 60;
             writefln("fov_degrees: %s", fov_degrees);
-            auto fov_radians = fov_degrees * PI / 180f;
+            auto fov_radians = radians(fov_degrees);
             auto scale = 1f / tan(fov_radians / 2f);
             writefln("scale: %s", scale);
             frustumMatrix = calculateFrustum(scale, aspect, 0.1f, 100f);
@@ -434,6 +435,7 @@ class Demo : DemoBase, DemoCallbacksBase {
 
             dimensionCallbacks ~= (int width, int height) { updateFrustum(width, height); };
             mouseCursorCallbacks ~= (double xpos, double ypos) { updateRotation(xpos, ypos); };
+            scrollCallbacks ~= (double xoffset, double yoffset) { updateScroll(xoffset, yoffset); };
             postPollCallbacks ~= () { updateCamera(); };
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
@@ -466,6 +468,14 @@ class Demo : DemoBase, DemoCallbacksBase {
         lastXpos = xpos;
         lastYpos = ypos;
     }
+
+    void updateScroll(double xoffset, double yoffset) {
+        CityCamera c = cast(CityCamera)camera;
+        writefln("%s, %s", xoffset, yoffset);
+        c.updateDistance(yoffset);
+    }
+
+
     DirectionKeyMode mode;
     DebugViewMode debugMode;
 
