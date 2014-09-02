@@ -464,7 +464,14 @@ class Demo : DemoBase, DemoCallbacksBase {
         }
 
         CityCamera c = cast(CityCamera)camera;
-        c.updateRotation(cast(int)(lastYpos - ypos) % 5, cast(int)(lastXpos - xpos) % 5, 0);
+        auto ydiff = lastYpos - ypos;
+        auto xdiff = lastXpos - xpos;
+        if (abs(ydiff) < abs(xdiff) / 2) {
+            ydiff = 0;
+        } else if (abs(xdiff) < abs(ydiff) / 2) {
+            xdiff = 0;
+        }
+        c.updateRotation(ydiff / 4, xdiff / 4, 0);
         lastXpos = xpos;
         lastYpos = ypos;
     }
