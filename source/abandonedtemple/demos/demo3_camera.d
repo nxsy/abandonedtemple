@@ -187,8 +187,8 @@ class CityCamera : ICamera {
                     break;
             }
 
-            writefln("plane_rotation.x is %s", plane_rotation.x);
-            writefln("plane_rotation.y is %s", plane_rotation.y);
+            direction_offset = direction_offset * (distance / 4);
+
             final switch (direction) {
                 case Direction.UP:
                     target.x -= sin(plane_rotation.y) * direction_offset;
@@ -242,7 +242,7 @@ class CityCamera : ICamera {
             lastCounter[direction] = 0;
         }
     }
-    
+
     void keyPressed(Direction k) {
         directionState[k] = DirectionState.FIRST;
     }
@@ -257,9 +257,13 @@ class CityCamera : ICamera {
     void updateRotation(float x, float y) {
         plane_rotation.x += radians(x);
         plane_rotation.y += radians(y);
+        plane_rotation.x = min(0, plane_rotation.x);
+        plane_rotation.x = max(-PI/2, plane_rotation.x);
     }
 
     void updateDistance(float diff) {
         distance += diff;
+        distance = min(50f, distance);
+        distance = max(1f, distance);
     }
 }
