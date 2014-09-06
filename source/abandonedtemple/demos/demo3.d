@@ -356,18 +356,18 @@ class Demo : DemoBase, DemoCallbacksBase {
             /* */
 
             fpsDrawer = new FpsDrawer!FontProgram(fontProgram, 25);
-            fpsCallbacks ~= (float fps) { fpsDrawer.updateFps(fps); };
-            dimensionCallbacks ~= (int width, int height) { fpsDrawer.updateDimensions(width, height); };
+            callbacks.fpsCallbacks ~= (float fps) { fpsDrawer.updateFps(fps); };
+            callbacks.dimensionCallbacks ~= (int width, int height) { fpsDrawer.updateDimensions(width, height); };
 
             timeDrawer = new TimeDrawer!FontProgram(fontProgram, 25);
-            dimensionCallbacks ~= (int width, int height) { timeDrawer.updateDimensions(width, height); };
+            callbacks.dimensionCallbacks ~= (int width, int height) { timeDrawer.updateDimensions(width, height); };
 
             modeDrawer = new ModeDrawer!FontProgram(fontProgram, 25);
-            dimensionCallbacks ~= (int width, int height) { modeDrawer.updateDimensions(width, height); };
+            callbacks.dimensionCallbacks ~= (int width, int height) { modeDrawer.updateDimensions(width, height); };
 
             mouseStatusDrawer = new MouseStatusDrawer!FontProgram(fontProgram, 25);
-            dimensionCallbacks ~= (int width, int height) { mouseStatusDrawer.updateDimensions(width, height); };
-            mouseCursorCallbacks ~= (double xpos, double ypos) { mouseStatusDrawer.updateMousePosition(xpos, ypos); };
+            callbacks.dimensionCallbacks ~= (int width, int height) { mouseStatusDrawer.updateDimensions(width, height); };
+            callbacks.mouseCursorCallbacks ~= (double xpos, double ypos) { mouseStatusDrawer.updateMousePosition(xpos, ypos); };
         }
 
         mat4 calculateFrustum(float scale, float aspect, float near, float far) {
@@ -431,10 +431,10 @@ class Demo : DemoBase, DemoCallbacksBase {
             fontProgram = new FontProgram();
             camera = new CityCamera();
 
-            dimensionCallbacks ~= (int width, int height) { updateFrustum(width, height); };
-            mouseCursorCallbacks ~= (double xpos, double ypos) { updateRotation(xpos, ypos); };
-            scrollCallbacks ~= (double xoffset, double yoffset) { updateScroll(xoffset, yoffset); };
-            postPollCallbacks ~= () { updateCamera(); };
+            callbacks.dimensionCallbacks ~= (int width, int height) { updateFrustum(width, height); };
+            callbacks.mouseCursorCallbacks ~= (double xpos, double ypos) { updateRotation(xpos, ypos); };
+            callbacks.scrollCallbacks ~= (double xoffset, double yoffset) { updateScroll(xoffset, yoffset); };
+            callbacks.postPollCallbacks ~= () { updateCamera(); };
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
 

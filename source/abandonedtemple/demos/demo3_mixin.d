@@ -4,7 +4,10 @@ mixin template DemoMixin() {
     version (Windows) {
         import derelict.opengl3.wglext : wglSwapIntervalEXT;
     }
+    import abandonedtemple.callbacks;
     private {
+        Callbacks callbacks;
+
         int width, height;
         string programName;
 
@@ -18,7 +21,7 @@ mixin template DemoMixin() {
         double lastTime = 0;
         float fps;
 
-        static struct Callbacks {
+        static struct FooCallbacks {
             static DemoCallbacksBase[GLFWwindow *] d;
 
             static void setDemo(GLFWwindow *window, DemoCallbacksBase d_) {
@@ -88,10 +91,10 @@ mixin template DemoMixin() {
             version (Windows) {
                 wglSwapIntervalEXT(1);
             }
-            Callbacks.setDemo(window, this);
-            glfwSetKeyCallback(window, &Callbacks.key_callback);
-            glfwSetCursorPosCallback(window, &Callbacks.cursorpos_callback);
-            glfwSetScrollCallback(window, &Callbacks.scroll_callback);
+            FooCallbacks.setDemo(window, this);
+            glfwSetKeyCallback(window, &FooCallbacks.key_callback);
+            glfwSetCursorPosCallback(window, &FooCallbacks.cursorpos_callback);
+            glfwSetScrollCallback(window, &FooCallbacks.scroll_callback);
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
@@ -105,21 +108,16 @@ mixin template DemoMixin() {
         this(640, 480, this.toString());
     }
 
-    void delegate (float fps) fpsCallbacks[];
-    void delegate (int width, int height) dimensionCallbacks[];
-    void delegate () postPollCallbacks[];
-    void delegate (int button, int action, int mods) mouseButtonCallbacks[];
-    void delegate (double xpos, double ypos) mouseCursorCallbacks[];
-    void delegate (double xoffset, double yoffset) scrollCallbacks[];
+
 
     void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-        foreach (void delegate(double xpos, double ypos) cb; mouseCursorCallbacks) {
+        foreach (MouseMoveCallback cb; callbacks.mouseCursorCallbacks) {
             cb(xpos, ypos);
         }
     }
 
     void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
-        foreach (void delegate(double xoffset, double yoffset) cb; scrollCallbacks) {
+        foreach (MouseScrollCallback cb; callbacks.scrollCallbacks) {
             cb(xoffset, yoffset);
         }
     }
@@ -133,7 +131,7 @@ mixin template DemoMixin() {
             // writefln("FPS: %f", fps);
             lastTime = frameStart;
             frames = 0;
-            foreach (void delegate(float fps) cb; fpsCallbacks) {
+            foreach (FpsCallback cb; callbacks.fpsCallbacks) {
                 cb(fps);
             }
         }
@@ -145,7 +143,7 @@ mixin template DemoMixin() {
 
         init();
 
-        foreach (void delegate(int width, int height) cb; dimensionCallbacks) {
+        foreach (WindowSizeCallback cb; callbacks.dimensionCallbacks) {
             cb(width, height);
         }
 
@@ -159,7 +157,7 @@ mixin template DemoMixin() {
             int old_width = width, old_height = height;
             glfwGetFramebufferSize(window, &width, &height);
             if (width != old_width || height != old_height) {
-                foreach (void delegate(int width, int height) cb; dimensionCallbacks) {
+                foreach (WindowSizeCallback cb; callbacks.dimensionCallbacks) {
                     glViewport(0, 0, width, height);
                     cb(width, height);
                 }
@@ -169,7 +167,7 @@ mixin template DemoMixin() {
             glfwSwapBuffers(window);
             glfwPollEvents();
 
-            foreach (void delegate() cb; postPollCallbacks) {
+            foreach (PostPollCallback cb; callbacks.postPollCallbacks) {
                 cb();
             }
         }
