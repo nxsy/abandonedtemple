@@ -14,11 +14,12 @@ import abandonedtemple.glwrapper :
     UniformBuffer, UniformBufferData;
 import abandonedtemple.font : Font, Glyph, FontDrawer;
 
-import abandonedtemple.demos.base : DemoBase, DemoCallbacksBase;
+import abandonedtemple.demos.base : DemoBase;
 import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
 import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
 import abandonedtemple.demos.demo3_camera : ICamera, Camera, CityCamera, Direction;
+import abandonedtemple.callbacks;
 
 mixin(program_from_shader_filenames("_AssetProgram", ["Asset.frag","Asset.vert"]));
 mixin(program_from_shader_filenames("FontProgram", ["Font.frag","Font.vert"]));
@@ -251,7 +252,7 @@ enum DebugViewMode {
     show_bump_map_raw,
 }
 
-class Demo : DemoBase, DemoCallbacksBase {
+class Demo : DemoBase, HasCallbacks {
     mixin DemoMixin;
     private {
         AssetDrawer assetDrawers[];
@@ -435,6 +436,7 @@ class Demo : DemoBase, DemoCallbacksBase {
             callbacks.mouseCursorCallbacks ~= (double xpos, double ypos) { updateRotation(xpos, ypos); };
             callbacks.scrollCallbacks ~= (double xoffset, double yoffset) { updateScroll(xoffset, yoffset); };
             callbacks.postPollCallbacks ~= () { updateCamera(); };
+            callbacks.keyCallbacks ~= (int key, int scancode, int action, int mods) { keyCallback(key, scancode, action, mods); };
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
 
@@ -483,7 +485,7 @@ class Demo : DemoBase, DemoCallbacksBase {
     DirectionKeyMode mode;
     DebugViewMode debugMode;
 
-    void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    void keyCallback(int key, int scancode, int action, int mods) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q) {
                 glfwSetWindowShouldClose(window, 1);
