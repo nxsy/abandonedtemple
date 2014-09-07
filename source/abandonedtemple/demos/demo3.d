@@ -314,9 +314,6 @@ class Demo : DemoBase, HasCallbacks {
     mixin DemoMixin;
     private {
         IDrawer drawers[];
-
-        mat4 frustumMatrix;
-
         ICamera camera;
 
         void bufferInit() {
