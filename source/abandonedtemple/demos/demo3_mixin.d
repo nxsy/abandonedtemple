@@ -57,7 +57,6 @@ mixin template DemoMixin() {
                 wglSwapIntervalEXT(1);
             }
             setCallbacks(window, this);
-
         }
     }
 
@@ -104,8 +103,8 @@ mixin template DemoMixin() {
             int old_width = width, old_height = height;
             glfwGetFramebufferSize(window, &width, &height);
             if (width != old_width || height != old_height) {
+                glViewport(0, 0, width, height);
                 foreach (WindowSizeCallback cb; callbacks.dimensionCallbacks) {
-                    glViewport(0, 0, width, height);
                     cb(width, height);
                 }
             }
