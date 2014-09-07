@@ -324,8 +324,6 @@ class Demo : DemoBase, HasCallbacks {
             drawers ~= new MouseStatusDrawer!FontProgram(fontProgram, 25, this);
         }
 
-
-
         void display() {
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
@@ -334,9 +332,7 @@ class Demo : DemoBase, HasCallbacks {
             }
         }
 
-
         void init() {
-
             CityCamera c = new CityCamera;
             camera = c;
             auto cameraControl = new CityCameraControl(c, this);
@@ -357,8 +353,6 @@ class Demo : DemoBase, HasCallbacks {
 
             camera.update();
         }
-
-
     }
 
     DebugViewMode debugMode;
