@@ -7,6 +7,7 @@ alias PostPollCallback = void delegate ();
 alias MouseButtonCallback = void delegate (int button, int action, int mods);
 alias MouseMoveCallback = void delegate (double xpos, double ypos);
 alias MouseScrollCallback = void delegate (double xoffset, double yoffset);
+alias TimeCallback = void delegate (double time);
 
 struct Callbacks
 {
@@ -17,6 +18,7 @@ struct Callbacks
     MouseButtonCallback mouseButtonCallbacks[];
     MouseMoveCallback mouseCursorCallbacks[];
     MouseScrollCallback scrollCallbacks[];
+    TimeCallback timeCallbacks[];
 }
 
 interface HasCallbacks {

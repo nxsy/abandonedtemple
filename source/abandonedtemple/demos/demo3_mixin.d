@@ -20,14 +20,6 @@ mixin template DemoMixin() {
 
         GLFWwindow *window;
 
-        double startTime = 0;
-        double frameStart = 0;
-        double timeDiff = 0;
-
-        int frames;
-        double lastTime = 0;
-        float fps;
-
         void glInit() {
             DerelictGL3.load();
             DerelictGLFW3.load();
@@ -69,21 +61,6 @@ mixin template DemoMixin() {
         this(640, 480, this.toString());
     }
 
-    void updateFps() {
-        if (!lastTime) {
-            lastTime = frameStart;
-        }
-        if (frameStart > (lastTime + 1)) {
-            fps = frames / (frameStart - lastTime);
-            lastTime = frameStart;
-            frames = 0;
-            foreach (FpsCallback cb; callbacks.fpsCallbacks) {
-                cb(fps);
-            }
-        }
-        frames++;
-    }
-
     void run() {
         glInit();
 
@@ -94,12 +71,13 @@ mixin template DemoMixin() {
         }
 
         while (!glfwWindowShouldClose(window)) {
-            frameStart = glfwGetTime();
-            if (!startTime) {
-                startTime = frameStart;
+            auto t = glfwGetTime();
+
+            foreach (TimeCallback cb; callbacks.timeCallbacks) {
+                cb(t);
             }
-            updateFps();
-            timeDiff = glfwGetTime() - startTime;
+
+
             int old_width = width, old_height = height;
             glfwGetFramebufferSize(window, &width, &height);
             if (width != old_width || height != old_height) {

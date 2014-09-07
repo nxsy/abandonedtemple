@@ -310,11 +310,51 @@ void createAssetDrawers(ref IDrawer[] drawers) {
     drawers ~= a;
 }
 
+class FpsCallbackCreator {
+    double lastTime = 0;
+    HasCallbacks c;
+    int frames;
+
+    this(HasCallbacks c_) {
+        c = c_;
+        c.getCallbacks().timeCallbacks ~= (double time) { timeCallback(time); };
+    }
+
+    void timeCallback(double frameStart) {
+        if (!lastTime) {
+            lastTime = frameStart;
+        }
+
+        if (!lastTime) {
+            lastTime = frameStart;
+        }
+        if (frameStart > (lastTime + 1)) {
+            float fps = frames / (frameStart - lastTime);
+            lastTime = frameStart;
+            frames = 0;
+            foreach (FpsCallback cb; c.getCallbacks().fpsCallbacks) {
+                cb(fps);
+            }
+        }
+        frames++;
+    }
+}
+
 class Demo : DemoBase, HasCallbacks {
     mixin DemoMixin;
     private {
+        double startTime = 0;
+        double timeDiff = 0;
+
         IDrawer drawers[];
         ICamera camera;
+
+        void timeCallback(double frameStart) {
+            if (!startTime) {
+                startTime = frameStart;
+            }
+            timeDiff = frameStart - startTime;
+        }
 
         void bufferInit() {
             createAssetDrawers(drawers);
@@ -336,8 +376,9 @@ class Demo : DemoBase, HasCallbacks {
             CityCamera c = new CityCamera;
             camera = c;
             auto cameraControl = new CityCameraControl(c, this);
+            auto fpsManager = new FpsCallbackCreator(this);
 
-
+            callbacks.timeCallbacks ~= (double time) { timeCallback(time); };
             callbacks.keyCallbacks ~= (int key, int scancode, int action, int mods) { keyCallback(key, scancode, action, mods); };
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
