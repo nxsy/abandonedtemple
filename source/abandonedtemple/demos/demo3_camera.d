@@ -48,10 +48,21 @@ static this() {
 
 interface ICamera {
     mat4 viewMatrix();
-    void update(double timeDiff);
+    mat4 perspectiveMatrix();
+    void update();
     void reset();
     void keyPressed(Direction k);
     void keyUnpressed(Direction k);
+}
+
+mat4 calculateFrustum(float scale, float aspect, float near, float far) {
+    mat4 ret = mat4(0);
+    ret[0][0] = scale / aspect;
+    ret[1][1] = scale;
+    ret[2][2] = (far+near)/(far-near);
+    ret[2][3] = 1f;
+    ret[3][2] = -(2 * far * near)/(far-near);
+    return ret;
 }
 
 class Camera : ICamera {
@@ -63,18 +74,24 @@ class Camera : ICamera {
         DirectionState[Direction] directionState;
         int[Direction] lastCounter;
         mat4 _viewMatrix;
+        mat4 _perspectiveMatrix;
     }
 
     mat4 viewMatrix() {
         return _viewMatrix;
     }
 
+    mat4 perspectiveMatrix() {
+        return _perspectiveMatrix;
+    }
+
+
     this() {
 
         reset();
     }
 
-    void update(double timeDiff) {
+    void update() {
         foreach(Direction direction; EnumMembers!Direction) {
             float direction_offset = 0f;
             final switch (directionState[direction]) {
@@ -154,10 +171,25 @@ class CityCamera : ICamera {
         mat4 _viewMatrix;
         int[Direction] lastCounter;
         DirectionState[Direction] directionState;
+        mat4 _perspectiveMatrix;
     }
-    
+
+    void updateDimensions(int width, int height) {
+        auto aspect = cast(float)width / height;
+        auto fov_degrees = 60;
+        writefln("fov_degrees: %s", fov_degrees);
+        auto fov_radians = radians(fov_degrees);
+        auto scale = 1f / tan(fov_radians / 2f);
+        writefln("scale: %s", scale);
+        _perspectiveMatrix = calculateFrustum(scale, aspect, 0.1f, 100f);
+    }
+
     mat4 viewMatrix() {
         return _viewMatrix;
+    }
+
+    mat4 perspectiveMatrix() {
+        return _perspectiveMatrix;
     }
     
     this() {
@@ -165,7 +197,7 @@ class CityCamera : ICamera {
         reset();
     }
     
-    void update(double timeDiff) {
+    void update() {
         foreach(Direction direction; EnumMembers!Direction) {
             float direction_offset = 0f;
             final switch (directionState[direction]) {

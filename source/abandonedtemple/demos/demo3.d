@@ -68,70 +68,60 @@ class AssetProgram {
     }
 }
 
-class FpsDrawer(P) : FontDrawer!P {
-    this(P program_, int fontSize_) {
+class FpsDrawer(P) : FontDrawer!P, IDrawer {
+    this(P program_, int fontSize_, HasCallbacks hc) {
         super(program_, fontSize_, " 0123456789.fps");
         rightMargin = 150;
+        hc.getCallbacks().fpsCallbacks ~= (float fps) { updateFps(fps); };
+        hc.getCallbacks().dimensionCallbacks ~= (int width, int height) { updateDimensions(width, height); };
     }
 
     void updateFps(float fps_) {
         displayString = format("%0.2f fps", fps_);
         update();
     }
+
+    void draw(double timeDiff, mat4 view, mat4 projection) {
+        (cast(FontDrawer!P)(this)).draw(timeDiff);
+    }
 }
 
-class TimeDrawer(P) : FontDrawer!P {
-    this(P program_, int fontSize_) {
+class TimeDrawer(P) : FontDrawer!P, IDrawer {
+    this(P program_, int fontSize_, HasCallbacks hc) {
         super(program_, fontSize_, " 0123456789.second");
+        hc.getCallbacks().dimensionCallbacks ~= (int width, int height) { updateDimensions(width, height); };
     }
 
-    override void draw(double timeDiff) {
+    void draw(double timeDiff, mat4 view, mat4 projection) {
         displayString = format("%0.2f", timeDiff);
         update();
-        FontDrawer!P.draw(timeDiff);
+        (cast(FontDrawer!P)(this)).draw(timeDiff);
     }
 }
 
-class ModeDrawer(P) : FontDrawer!P {
-    DirectionKeyMode mode;
-    this(P program_, int fontSize_) {
-        super(program_, fontSize_, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.");
-        rightMargin = 300;
-    }
-
-    void updateMode(DirectionKeyMode mode_) {
-        mode = mode_;
-        final switch(mode) {
-        case DirectionKeyMode.offset:
-            displayString = "offset";
-            break;
-        case DirectionKeyMode.rotation:
-            displayString = "rotate";
-            break;
-        case DirectionKeyMode.zoom:
-            displayString = "zoom";
-            break;
-        }
-        update();
-    }
-}
-
-class MouseStatusDrawer(P) : FontDrawer!P {
-    this(P program_, int fontSize_) {
+class MouseStatusDrawer(P) : FontDrawer!P, IDrawer {
+    this(P program_, int fontSize_, HasCallbacks hc) {
         super(program_, fontSize_, "0123456789-,. ");
-        rightMargin = 300;
-        //bottomMargin = 1;
+        rightMargin = 400;
+        hc.getCallbacks().dimensionCallbacks ~= (int width, int height) { updateDimensions(width, height); };
+        hc.getCallbacks().mouseCursorCallbacks ~= (double xpos, double ypos) { updateMousePosition(xpos, ypos); };
     }
+
     void updateMousePosition(double xpos, double ypos) {
         displayString = format("%0d, %0d", cast(int)xpos,cast(int)ypos);
         update();
     }
-    override void draw(double timeDiff) {
-        FontDrawer!P.draw(timeDiff);
+
+    void draw(double timeDiff, mat4 view, mat4 projection) {
+        (cast(FontDrawer!P)(this)).draw(timeDiff);
     }
 }
 
-class AssetDrawer {
+interface IDrawer {
+    void draw(double timeDiff, mat4 view, mat4 projection);
+}
+
+class AssetDrawer : IDrawer {
     AssetProgram program;
     Asset asset;
 
@@ -215,6 +205,7 @@ class AssetDrawer {
     }
 
     void draw(double timeDiff, mat4 view, mat4 projection) {
+        writefln("draw");
         auto world = mat4.identity
             .scale(scale.x, scale.y, scale.z)
             .rotatez(timeDiff * rotation_rate.z)
@@ -252,190 +243,108 @@ enum DebugViewMode {
     show_bump_map_raw,
 }
 
+void createAssetDrawers(ref IDrawer[] drawers) {
+    auto assetProgram = new AssetProgram();
+    AssetDrawer a;
+    
+    auto scene = importFile("brick.obj");
+    Asset cube_asset = new Asset(scene, UniformBindings.material);
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(0, 0, 0);
+    a.scale = vec3(0.1);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(2, 0, 14.4);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(2, 0, 12);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(4.4, 0, 12);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(6.8, 0, 9.6);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(6.8, 0, 7.2);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(-4.4, 0, 14.4);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(-4.4, 0, 12);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(-6.8, 0, 9.6);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, cube_asset);
+    a.offset = vec3(-6.8, 0, 7.2);
+    a.scale = vec3(0.3);
+    drawers ~= a;
+    
+    a  = new AssetDrawer(assetProgram, "golem.obj");
+    a.offset = vec3(-2.5, 0.5, 6);
+    a.scale = vec3(0.20);
+    //a.rotation_rate = vec3(0, 0.25, 0);
+    a.rotation = vec3(0, PI - 0.5, 0);
+    a.diffuse = 0.9f;
+    a.ambient = 0.1f;
+    drawers ~= a;
+}
+
 class Demo : DemoBase, HasCallbacks {
     mixin DemoMixin;
     private {
-        AssetDrawer assetDrawers[];
-        FpsDrawer!FontProgram fpsDrawer;
-        TimeDrawer!FontProgram timeDrawer;
-        ModeDrawer!FontProgram modeDrawer;
-        MouseStatusDrawer!FontProgram mouseStatusDrawer;
-
-        AssetProgram assetProgram;
-        FontProgram fontProgram;
+        IDrawer drawers[];
 
         mat4 frustumMatrix;
 
         ICamera camera;
 
         void bufferInit() {
-            AssetDrawer a;
-
-            auto scene = importFile("brick.obj");
-            //describeScene(scene);
-            Asset cube_asset = new Asset(scene, UniformBindings.material);
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(0, 0, 0);
-            a.scale = vec3(0.1);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(2, 0, 14.4);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(2, 0, 12);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(4.4, 0, 12);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(6.8, 0, 9.6);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(6.8, 0, 7.2);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(-4.4, 0, 14.4);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(-4.4, 0, 12);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(-6.8, 0, 9.6);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            a  = new AssetDrawer(assetProgram, cube_asset);
-            a.offset = vec3(-6.8, 0, 7.2);
-            a.scale = vec3(0.3);
-            assetDrawers ~= a;
-
-            /* */
-            a  = new AssetDrawer(assetProgram, "golem.obj");
-            a.offset = vec3(-2.5, 0.5, 6);
-            a.scale = vec3(0.20);
-            //a.rotation_rate = vec3(0, 0.25, 0);
-            a.rotation = vec3(0, PI - 0.5, 0);
-            a.diffuse = 0.9f;
-            a.ambient = 0.1f;
-            assetDrawers ~= a;
-
-            /*
-            a  = new AssetDrawer(assetProgram, "chest.obj");
-            a.offset = vec3(3.5, -1, 8);
-            a.scale = vec3(0.02);
-            //a.rotation_rate = vec3(0, 0.25, 0);
-            a.rotation = vec3(0, 3.75, 0);
-            a.diffuse = 0.9f;
-            a.ambient = 0.1f;
-            assetDrawers ~= a;
-
-            /*
-            a  = new AssetDrawer(assetProgram, "rocks_03.obj");
-            a.offset = vec3(2.5, -1, 6);
-            a.scale = vec3(0.02);
-            //a.rotation_rate = vec3(0, 0.25, 0);
-            a.rotation = vec3(0, 3.75, 0);
-            a.diffuse = 0.9f;
-            a.ambient = 0.1f;
-            assetDrawers ~= a;
-            /* */
-
-            fpsDrawer = new FpsDrawer!FontProgram(fontProgram, 25);
-            callbacks.fpsCallbacks ~= (float fps) { fpsDrawer.updateFps(fps); };
-            callbacks.dimensionCallbacks ~= (int width, int height) { fpsDrawer.updateDimensions(width, height); };
-
-            timeDrawer = new TimeDrawer!FontProgram(fontProgram, 25);
-            callbacks.dimensionCallbacks ~= (int width, int height) { timeDrawer.updateDimensions(width, height); };
-
-            modeDrawer = new ModeDrawer!FontProgram(fontProgram, 25);
-            callbacks.dimensionCallbacks ~= (int width, int height) { modeDrawer.updateDimensions(width, height); };
-
-            mouseStatusDrawer = new MouseStatusDrawer!FontProgram(fontProgram, 25);
-            callbacks.dimensionCallbacks ~= (int width, int height) { mouseStatusDrawer.updateDimensions(width, height); };
-            callbacks.mouseCursorCallbacks ~= (double xpos, double ypos) { mouseStatusDrawer.updateMousePosition(xpos, ypos); };
+            createAssetDrawers(drawers);
+            auto fontProgram = new FontProgram();
+            drawers ~= new FpsDrawer!FontProgram(fontProgram, 25, this);
+            drawers ~= new TimeDrawer!FontProgram(fontProgram, 25, this);
+            drawers ~= new MouseStatusDrawer!FontProgram(fontProgram, 25, this);
         }
 
-        mat4 calculateFrustum(float scale, float aspect, float near, float far) {
-            mat4 ret = mat4(0);
-            ret[0][0] = scale / aspect;
-            ret[1][1] = scale;
-            ret[2][2] = (far+near)/(far-near);
-            ret[2][3] = 1f;
-            ret[3][2] = -(2 * far * near)/(far-near);
-            return ret;
-        }
 
-        void updateFrustum(int width, int height) {
-            auto aspect = cast(float)width / height;
-            auto fov_degrees = 60;
-            writefln("fov_degrees: %s", fov_degrees);
-            auto fov_radians = radians(fov_degrees);
-            auto scale = 1f / tan(fov_radians / 2f);
-            writefln("scale: %s", scale);
-            frustumMatrix = calculateFrustum(scale, aspect, 0.1f, 100f);
-        }
-
-        void drawAsset() {
-            assetProgram.use();
-
-            foreach(AssetDrawer assetDrawer; assetDrawers) {
-                assetDrawer.draw(timeDiff, camera.viewMatrix, frustumMatrix);
-            }
-        }
-
-        void drawFps() {
-            fpsDrawer.draw(timeDiff);
-        }
-
-        void drawTime() {
-            timeDrawer.draw(timeDiff);
-        }
-
-        void drawMode() {
-            modeDrawer.updateMode(mode);
-            modeDrawer.draw(timeDiff);
-        }
 
         void display() {
             glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-            drawAsset();
-            drawFps();
-            drawTime();
-            //drawMode();
-
-            mouseStatusDrawer.draw(timeDiff);
+            foreach(IDrawer drawer; drawers) {
+                drawer.draw(timeDiff, camera.viewMatrix, camera.perspectiveMatrix);
+            }
         }
 
-        void updateCamera() {
-            camera.update(timeDiff);
-        }
 
         void init() {
-            assetProgram = new AssetProgram();
-            fontProgram = new FontProgram();
-            camera = new CityCamera();
 
-            callbacks.dimensionCallbacks ~= (int width, int height) { updateFrustum(width, height); };
-            callbacks.mouseCursorCallbacks ~= (double xpos, double ypos) { updateRotation(xpos, ypos); };
-            callbacks.scrollCallbacks ~= (double xoffset, double yoffset) { updateScroll(xoffset, yoffset); };
-            callbacks.postPollCallbacks ~= () { updateCamera(); };
+            CityCamera c = new CityCamera;
+            camera = c;
+            auto cameraControl = new CityCameraControl(c, this);
+
+
             callbacks.keyCallbacks ~= (int key, int scancode, int action, int mods) { keyCallback(key, scancode, action, mods); };
 
             glClearColor(0.0f, 0.0f, 0.3f, 0.0f);
@@ -449,40 +358,12 @@ class Demo : DemoBase, HasCallbacks {
 
             glEnable(GL_TEXTURE_2D);
 
-            camera.update(timeDiff);
+            camera.update();
         }
 
 
     }
 
-    double lastXpos, lastYpos;
-    void updateRotation(double xpos, double ypos) {
-        if (isNaN(lastXpos)) {
-            lastXpos = xpos;
-            lastYpos = ypos;
-            return;
-        }
-
-        CityCamera c = cast(CityCamera)camera;
-        auto ydiff = lastYpos - ypos;
-        auto xdiff = lastXpos - xpos;
-        if (abs(ydiff) < abs(xdiff) / 2) {
-            ydiff = 0;
-        } else if (abs(xdiff) < abs(ydiff) / 2) {
-            xdiff = 0;
-        }
-        c.updateRotation(ydiff / 4, xdiff / 4);
-        lastXpos = xpos;
-        lastYpos = ypos;
-    }
-
-    void updateScroll(double xoffset, double yoffset) {
-        CityCamera c = cast(CityCamera)camera;
-        c.updateDistance(yoffset);
-    }
-
-
-    DirectionKeyMode mode;
     DebugViewMode debugMode;
 
     void keyCallback(int key, int scancode, int action, int mods) {
@@ -492,11 +373,6 @@ class Demo : DemoBase, HasCallbacks {
             }
 
             if (mods == 4) {
-                if (key == GLFW_KEY_M) {
-                    mode++;
-                    mode %= DirectionKeyMode.max + 1;
-                }
-
                 if (key == GLFW_KEY_D) {
                     debugMode++;
                     debugMode %= DebugViewMode.max + 1;
@@ -507,24 +383,74 @@ class Demo : DemoBase, HasCallbacks {
                     AssetDrawer.normal_mapping = !AssetDrawer.normal_mapping;
                 }
 
-                if (key == GLFW_KEY_C) {
-                    camera.reset();
-                }
                 return;
             }
         }
 
-        if (action == GLFW_PRESS) {
-            if (key == GLFW_KEY_A) { camera.keyPressed(Direction.LEFT); }
-            if (key == GLFW_KEY_D) { camera.keyPressed(Direction.RIGHT); }
-            if (key == GLFW_KEY_S) { camera.keyPressed(Direction.DOWN); }
-            if (key == GLFW_KEY_W) { camera.keyPressed(Direction.UP); }
+    }
+}
+
+class CityCameraControl {
+    CityCamera camera;
+
+    this(CityCamera camera_, HasCallbacks hc) {
+        camera = camera_;
+
+        hc.getCallbacks().scrollCallbacks ~= (double xoffset, double yoffset) { updateScroll(xoffset, yoffset); };
+        hc.getCallbacks().postPollCallbacks ~= () { updateCamera(); };
+        hc.getCallbacks().mouseCursorCallbacks ~= (double xpos, double ypos) { updateRotation(xpos, ypos); };
+        hc.getCallbacks().keyCallbacks ~= (int key, int scancode, int action, int mods) { keyCallback(key, scancode, action, mods); };
+        hc.getCallbacks().dimensionCallbacks ~= (int width, int height) { camera.updateDimensions(width, height); };
+    }
+
+    void updateScroll(double xoffset, double yoffset) {
+        camera.updateDistance(yoffset);
+    }
+
+    double lastXpos, lastYpos;
+    void updateRotation(double xpos, double ypos) {
+        if (isNaN(lastXpos)) {
+            lastXpos = xpos;
+            lastYpos = ypos;
+            return;
         }
-        if (action == GLFW_RELEASE) {
-            if (key == GLFW_KEY_A) { camera.keyUnpressed(Direction.LEFT); }
-            if (key == GLFW_KEY_D) { camera.keyUnpressed(Direction.RIGHT); }
-            if (key == GLFW_KEY_S) { camera.keyUnpressed(Direction.DOWN); }
-            if (key == GLFW_KEY_W) { camera.keyUnpressed(Direction.UP); }
+
+        auto ydiff = lastYpos - ypos;
+        auto xdiff = lastXpos - xpos;
+        if (abs(ydiff) < abs(xdiff) / 2) {
+            ydiff = 0;
+        } else if (abs(xdiff) < abs(ydiff) / 2) {
+            xdiff = 0;
+        }
+        camera.updateRotation(ydiff / 4, xdiff / 4);
+        lastXpos = xpos;
+        lastYpos = ypos;
+    }
+
+    void updateCamera() {
+        camera.update();
+    }
+
+    void keyCallback(int key, int scancode, int action, int mods) {
+        if ((mods & 4) == 0) {
+            if (action == GLFW_PRESS) {
+                if (key == GLFW_KEY_A) { camera.keyPressed(Direction.LEFT); }
+                if (key == GLFW_KEY_D) { camera.keyPressed(Direction.RIGHT); }
+                if (key == GLFW_KEY_S) { camera.keyPressed(Direction.DOWN); }
+                if (key == GLFW_KEY_W) { camera.keyPressed(Direction.UP); }
+            }
+            if (action == GLFW_RELEASE) {
+                if (key == GLFW_KEY_A) { camera.keyUnpressed(Direction.LEFT); }
+                if (key == GLFW_KEY_D) { camera.keyUnpressed(Direction.RIGHT); }
+                if (key == GLFW_KEY_S) { camera.keyUnpressed(Direction.DOWN); }
+                if (key == GLFW_KEY_W) { camera.keyUnpressed(Direction.UP); }
+            }
+            return;
+        }
+        if ((mods & 4) == 4) {
+            if (key == GLFW_KEY_C) {
+                camera.reset();
+            }
         }
     }
 }
