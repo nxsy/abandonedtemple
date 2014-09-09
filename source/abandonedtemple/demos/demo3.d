@@ -205,7 +205,6 @@ class AssetDrawer : IDrawer {
     }
 
     void draw(double timeDiff, mat4 view, mat4 projection) {
-        writefln("draw");
         auto world = mat4.identity
             .scale(scale.x, scale.y, scale.z)
             .rotatez(timeDiff * rotation_rate.z)
