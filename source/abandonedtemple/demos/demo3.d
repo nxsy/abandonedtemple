@@ -10,16 +10,15 @@ import gl3n.linalg;
 import gl3n.math;
 
 import abandonedtemple.glwrapper :
-    VertexArray, ArrayBuffer, ElementArrayBuffer, Texture2D,
     UniformBuffer, UniformBufferData;
 import abandonedtemple.font : Font, Glyph, FontDrawer;
 
 import abandonedtemple.demos.base : DemoBase;
 import abandonedtemple.demos.demo3_program : program_from_shader_filenames;
-import abandonedtemple.demos.demo3_mixin : DemoMixin;
 import abandonedtemple.demos.demo3_assets : describeScene, importFile, Asset;
 import abandonedtemple.demos.demo3_camera : ICamera, Camera, CityCamera, Direction;
 import abandonedtemple.callbacks;
+import abandonedtemple.glfw.runloop;
 
 mixin(program_from_shader_filenames("_AssetProgram", ["Asset.frag","Asset.vert"]));
 mixin(program_from_shader_filenames("FontProgram", ["Font.frag","Font.vert"]));
@@ -324,9 +323,6 @@ class FpsCallbackCreator {
             lastTime = frameStart;
         }
 
-        if (!lastTime) {
-            lastTime = frameStart;
-        }
         if (frameStart > (lastTime + 1)) {
             float fps = frames / (frameStart - lastTime);
             lastTime = frameStart;
@@ -340,7 +336,38 @@ class FpsCallbackCreator {
 }
 
 class Demo : DemoBase, HasCallbacks {
-    mixin DemoMixin;
+
+    
+    ref Callbacks getCallbacks() {
+        return callbacks;
+    }
+    
+    private {
+        Callbacks callbacks;
+        
+        int width, height;
+        string programName;
+        
+        GLFWwindow *window;
+        GlfwRunLoop runloop;
+    }
+    
+    this(int width_, int height_, string programName_) {
+        width = width_;
+        height = height_;
+        programName = programName_;
+    }
+    
+    this() {
+        this(640, 480, this.toString());
+    }
+    
+    void run() {
+        GlfwWindowCreateParams p = GlfwWindowCreateParams(width, height, programName);
+        runloop = new GlfwRunLoop(p, this, (GLFWwindow *window){ return init(window);}, (){display;});
+        runloop.run();
+    }
+
     private {
         double startTime = 0;
         double timeDiff = 0;
@@ -371,7 +398,8 @@ class Demo : DemoBase, HasCallbacks {
             }
         }
 
-        void init() {
+        void init(GLFWwindow *window_) {
+            window = window_;
             CityCamera c = new CityCamera;
             camera = c;
             auto cameraControl = new CityCameraControl(c, this);
@@ -400,7 +428,7 @@ class Demo : DemoBase, HasCallbacks {
     void keyCallback(int key, int scancode, int action, int mods) {
         if (action == GLFW_PRESS || action == GLFW_REPEAT) {
             if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q) {
-                glfwSetWindowShouldClose(window, 1);
+                runloop.shouldStop();
             }
 
             if (mods == 4) {
